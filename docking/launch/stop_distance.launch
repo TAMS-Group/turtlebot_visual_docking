@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+<!-- Listener -->
+<node name="dock" pkg="docking" type="stop_distance_node" args="--test" respawn="false" >
+<param name="tag_id" value="100" type="str" />
+</node>
+</launch>
+

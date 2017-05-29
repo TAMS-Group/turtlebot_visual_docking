@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+<!-- Turtle Roboter starten -->
+<include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot_navigation.launch"  />
+<!-- size: 0.077-->
+<node pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector">
+    <rosparam param="tag_descriptions">[{id: 100, size: 0.091}]</rosparam>
+    <remap from="/image_rect" to="/camera/rgb/image_raw"/>
+    <remap from="/camera_info" to="/camera/rgb/camera_info"/>
+  </node>
+
+
+</launch>
+
