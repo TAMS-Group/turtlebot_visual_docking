@@ -463,7 +463,7 @@ if(alpha_rad != 0.0){
         _publisher.publish(base);
         //We wait, to reduce the number of sended TwistMessages,
         //If we would not the application crashes after some time.
-        ros::Duration(0.5).sleep();
+        ros::Duration(0.2).sleep();
         float epsilon 	= goal_angle - _angle;
         epsilon 	= getAmount(epsilon);  
         weiter = epsilon  > 0.1 ; 
