@@ -444,6 +444,9 @@ void findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 void move_angle(float alpha_rad){
 
 if(alpha_rad != 0.0){
+    
+    float turn_velocity = 0.5;
+    float DT            = getAmount(0.1/turn_velocity);
     float goal_angle    = _angle + alpha_rad;
     int   N             = (int)getAmount((goal_angle / M_PI));
     float rest          = goal_angle - ((float)N * M_PI);
@@ -453,9 +456,10 @@ if(alpha_rad != 0.0){
         goal_angle = (goal_angle > M_PI) ? -M_PI + rest : goal_angle;
         goal_angle = (goal_angle < -M_PI) ? M_PI - rest : goal_angle;
     }
-    float rad_velocity = (alpha_rad < 0) ? -0.5 : 0.5;
-    bool weiter = true; 
-    
+    float rad_velocity 	= (alpha_rad < 0) ? (-1)*turn_velocity : turn_velocity;
+    bool weiter 	= true; 
+    float alpha_old 	= 0;
+    float alpha_new	= _angle;
     while(weiter){
         geometry_msgs::Twist base;
         base.linear.x 	= 0.0;
@@ -463,10 +467,10 @@ if(alpha_rad != 0.0){
         _publisher.publish(base);
         //We wait, to reduce the number of sended TwistMessages,
         //If we would not the application crashes after some time.
-        ros::Duration(0.2).sleep();
+	ros::Duration(DT).sleep();
         float epsilon 	= goal_angle - _angle;
         epsilon 	= getAmount(epsilon);  
-        weiter = epsilon  > 0.1 ; 
+        weiter = epsilon  > 0.1 ;
     }
 }
 }
@@ -827,7 +831,6 @@ int main(int argc, char **argv){
         Docking *d = new Docking();
         
 	d->startDocking();
-	
 
 	ros::spin();
         return 0;
