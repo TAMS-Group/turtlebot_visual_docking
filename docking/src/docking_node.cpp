@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Imu.h> 
+#include <kobuki_msgs/SensorState.h>
 #include <tf/LinearMath/Vector3.h>
 #include "avg.cpp"
 #include <mutex>
@@ -64,6 +65,7 @@ ros::Subscriber 	_sub1;
 ros::Subscriber		_sub2;
 ros::Subscriber 	_sub3;
 ros::Subscriber		_sub4;
+ros::Subscriber		_sub5;
 double 			_angle;
 ros::NodeHandle		_n;
 tf::StampedTransform    _transform_cam_base;
@@ -316,8 +318,10 @@ Docking(){
         //Here we register all _subscribing callback functions
         _sub1 = _n.subscribe("mobile_base/sensors/imu_data",1,&Docking::actual_angle,this);	
 	_sub2 = _n.subscribe("tag_detections",1,&Docking::get_avg_position_angle,this);		
-	_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
+	//_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
 	_sub4 = _n.subscribe("tag_detections",10,&Docking::findTag,this);
+	_sub5 = _n.subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
+
 
         //The Parameters are read. 
 	std::string tag_id;
@@ -368,6 +372,27 @@ void get_battery_status(const diagnostic_msgs::DiagnosticArray& msg){
 			}
 		}
 	}
+}
+
+/**
+ * This callback function detects if the robot is in the docking
+ * station and does recharging.
+ */
+
+void get_charging_status(const kobuki_msgs::SensorState& msg){
+
+int status = msg.charger;
+
+//ROS_ERROR("status : %i",status);
+
+
+if(status == 6 ){
+        _docking_status = true;
+}else{
+        _docking_status = false;
+}
+
+
 }
 
 /*
