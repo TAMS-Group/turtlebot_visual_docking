@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <tf/tf.h>
 #include <sensor_msgs/Imu.h> 
 #include <kobuki_msgs/SensorState.h>
-#include <kobuki_msgs/SensorState.h>
+#include <kobuki_msgs/BumperEvent.h>
 #include <tf/LinearMath/Vector3.h>
 #include "avg.cpp"
 #include <mutex>
