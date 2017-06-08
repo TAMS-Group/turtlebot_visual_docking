@@ -44,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <tf/tf.h>
 #include <sensor_msgs/Imu.h> 
 #include <kobuki_msgs/SensorState.h>
+#include <kobuki_msgs/SensorState.h>
 #include <tf/LinearMath/Vector3.h>
 #include "avg.cpp"
 #include <mutex>
@@ -66,6 +67,7 @@ ros::Subscriber		_sub2;
 ros::Subscriber 	_sub3;
 ros::Subscriber		_sub4;
 ros::Subscriber		_sub5;
+ros::Subscriber		_sub6;
 double 			_angle;
 ros::NodeHandle		_n;
 tf::StampedTransform    _transform_cam_base;
@@ -85,7 +87,7 @@ float 			_avg_position_angle;
 float 			_avg_docking_angle;
 std::string 		_tag_name;
 double 			_STOP_DISTANCE;
-
+bool                    _bumper_pressed;
 
 
 /**
@@ -288,6 +290,7 @@ void Init(){
     _TAG_AVAILABLE	= false;
     _try_more 		= true;
     _start_avg		= false;
+    _bumper_pressed     = false;
     _avg_pos 		= new Avg(40);
     _avg_dock		= new Avg(10);
 }
@@ -321,7 +324,7 @@ Docking(){
 	//_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
 	_sub4 = _n.subscribe("tag_detections",10,&Docking::findTag,this);
 	_sub5 = _n.subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
-
+        _sub6 = _n.subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
 
         //The Parameters are read. 
 	std::string tag_id;
@@ -340,6 +343,18 @@ Docking(){
         //All other variables get initilized
         Init();
 }
+
+
+void get_bumper_status(const kobuki_msgs::BumperEvent& msg){
+
+int status_all = msg.state;
+
+if(status_all==1){
+        _bumper_pressed = true;
+}
+
+}
+
 
 /**
  * This callback function read the rotation angle, 
@@ -812,23 +827,24 @@ void docking(){
             base.angular.z = 0;
             base.linear.x = 0.1;// We should drive very slow
         }
-        //Finally publish the __base_cmd the __base_cmd
-        if(pos.y > _STOP_DISTANCE){   
+
+	// Finally publish the __base_cmd the __base_cmd
+        // The Robot should stop when the battery is recharging
+        // The Robot should drive backwards, when the bumper was triggered
+
+        if(!_docking_status){
+        if(!_bumper_pressed){
             _publisher.publish(base);
-            ros::Duration(0.5).sleep();			
+            ros::Duration(0.5).sleep();
             docking();
-        }else{
-            this->adjusting();	
-            ros::Duration(4.0).sleep();
-            if(!_docking_status){
-		ROS_INFO("Try once more...\n");
-                this->drive_backward(0.55);
-                this->adjusting();
-                docking();	
-            }else{
-                //If we have reached this we are finish with the docking
-                exit(0);
-            }
+         }else{
+            ROS_INFO("Try once more...\n");
+            this->drive_backward(0.55);
+            this->adjusting();
+            _bumper_pressed = false;
+            docking();
+         }
+
         }
     }
 }
