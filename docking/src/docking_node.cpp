@@ -825,14 +825,20 @@ void docking(){
             base.angular.z = -0.27;
         }else{
             base.angular.z = 0;
-            base.linear.x = 0.1;// We should drive very slow
+        if(pos.y > _STOP_DISTANCE + 0.20 ){
+		base.linear.x = 0.1;// We should drive very slow
+	}else{
+		base.linear.x = 0.02;
+	}
         }
 
 	// Finally publish the __base_cmd the __base_cmd
         // The Robot should stop when the battery is recharging
         // The Robot should drive backwards, when the bumper was triggered
 
-        if(!_docking_status){
+        if(_docking_status){
+		exit(0); // On this point the docking was sucessfull
+	}else{
         if(!_bumper_pressed){
             _publisher.publish(base);
             ros::Duration(0.5).sleep();
@@ -844,7 +850,6 @@ void docking(){
             _bumper_pressed = false;
             docking();
          }
-
         }
     }
 }
