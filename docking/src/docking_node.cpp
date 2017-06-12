@@ -329,8 +329,9 @@ Docking(){
         //The Parameters are read. 
 	std::string tag_id;
 	if (_n.getParam("/dock/tag_id", tag_id)){
-            _tag_name = "tag_" + tag_id;	
-  	}else{
+            _tag_name = "tag_" + tag_id;
+  	     //ROS_INFO(" tag_id = %s",_tag_name.c_str());
+	}else{
             ROS_ERROR("No Parameters found!");
             exit(0);
 	}
@@ -338,6 +339,7 @@ Docking(){
             ROS_ERROR("No Parameters for Stop_Distance found!");
             exit(0);
         }
+	//exit(0);
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized
@@ -375,7 +377,7 @@ void get_battery_status(const diagnostic_msgs::DiagnosticArray& msg){
     int s = msg.status.size();
     if(s >= 1){
         int size =  msg.status[0].values.size();
-            for(int i = 0; i < size; i++){	
+            for(int i = 0; i < size; i++){
                 std::string key = msg.status[0].values[i].key;
                     if(key == "Source"){
                         std::string value = msg.status[0].values[i].value;
@@ -451,7 +453,7 @@ if(_start_avg){
                 float alpha_dock   = atan(_y/_x);
                 float alpha_pos    = alpha_dock - (M_PI/2 + yaw);
                 _g_mutex.lock();
-                    if(std::isfinite(alpha_pos)){	
+                    if(std::isfinite(alpha_pos)){
                         _avg_pos->new_value(alpha_pos);
                         _avg_dock->new_value(alpha_dock);
                         float avg_pos_angle  = _avg_pos->avg();
@@ -459,7 +461,7 @@ if(_start_avg){
                         _avg_position_angle = avg_pos_angle;
                         _avg_docking_angle  = avg_dock_angle;
                     }
-		_g_mutex.unlock();	
+		_g_mutex.unlock();
             }
 	}
 }
@@ -471,9 +473,9 @@ if(_start_avg){
  * will be set to false.
  */
 void findTag(const apriltags_ros::AprilTagDetectionArray& msg){
-	if(_find_tag){	
+	if(_find_tag){
 		apriltags_ros::AprilTagDetection detection;
-		int size = msg.detections.size() ;	
+		int size = msg.detections.size() ;
 		_TAG_AVAILABLE = (size == 1);
 	}
 }
@@ -565,8 +567,11 @@ void drive_backward(float distance){
 
 
 /**
- * This function dirves to the given coordinates 
+ * This function dirves to the given coordinates.
+ * This function only works if the robot does know its position.
+ * 
  */ 
+
 void move_to(float x, float y){
 
     MoveBaseClient ac("move_base", true);
@@ -575,7 +580,10 @@ void move_to(float x, float y){
         ROS_INFO("Waiting for the move_base action server to come up");
     }
     move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.frame_id = _tag_name;
+    
+    // Actually we use the topic map because we need a fixpoint, 
+    // which does not change over time
+    goal.target_pose.header.frame_id = "map";
     goal.target_pose.header.stamp = ros::Time::now();
 
     goal.target_pose.pose.position.x = x;
@@ -658,7 +666,7 @@ void linear_approach(){
     Vector2 vec2 	= spinVector(t,epsilon);
     Vector2               vec_n;//Vector vec2 normieren 
     vec_n.x             =  1/(sqrt(vec2.x*vec2.x+vec2.y*vec2.y)) * vec2.x;
-    vec_n.y             =  1/(sqrt(vec2.x*vec2.x+vec2.y*vec2.y)) * vec2.y;	  
+    vec_n.y             =  1/(sqrt(vec2.x*vec2.x+vec2.y*vec2.y)) * vec2.y;
     //Bedingung die zu prüfen ist
     float d = -1*((t.y * vec_n.x)/(vec_n.y)) - t.x;
     d = (-1)*d;
@@ -672,7 +680,7 @@ void linear_approach(){
         drive_forward(0.50);
         move_angle(-M_PI);
         ros::Duration(3.0).sleep();
-        linear_approach();			
+        linear_approach();
         return;
     }else{
         startReadingAngle();
@@ -748,13 +756,13 @@ void positioning(){
             ros::Duration(1.0).sleep();
             docking(); 
         }else{
-            float alpha_yaw 	= get_yaw_angle();	
+            float alpha_yaw 	= get_yaw_angle();
             float a_pos_deg     = (180/M_PI) * a_pos_rad;
             float beta_rad      = 0.0;
             float way           = 0.0;
             if(a_pos_deg < 0.0){// Now the robot has to turn right
                     ROS_INFO("Turning right!");
-                    beta_rad = ((M_PI/2) + alpha_yaw);			
+                    beta_rad = ((M_PI/2) + alpha_yaw);
                     way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle((-1)*beta_rad);
             }else{
@@ -771,7 +779,7 @@ void positioning(){
             drive_forward(getAmount(way));
             // Now the robot should be in the frontal Position 
             // he must turn now 
-            if(a_pos_deg > 0.0){	
+            if(a_pos_deg > 0.0){
                 this->move_angle((-1)*M_PI/2);
             }else{
                 this->move_angle((M_PI/2));
@@ -789,13 +797,13 @@ void positioning(){
             if(a_pos_deg < 20.0){
                 if(a_pos_deg < 10.0){
                     startReadingAngle();
-                    ros::Duration(1.0).sleep();	
-                    docking();				
+                    ros::Duration(1.0).sleep();
+                    docking();
                 }else{
                     linear_approach();
                 }
             }else{
-                ROS_ERROR("RESTART_POSITIONING");	
+                ROS_ERROR("RESTART_POSITIONING");
                 positioning();
             }
         }
@@ -871,11 +879,15 @@ void startDocking(){
 int main(int argc, char **argv){
 
         ROS_INFO("Docking is started!");
+	ROS_INFO("Hopefully the robot knows where he is!");
         ros::init(argc,argv,"follow_tag");
         ros::AsyncSpinner spinner(5);
         spinner.start();
         Docking *d = new Docking();
-        
+       
+	//We have to drive to [2.867, 1.030, 0.010]
+	d->move_to(2.867 , 1.030);
+ 
 	d->startDocking();
 
 	ros::spin();
