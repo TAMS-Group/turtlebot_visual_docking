@@ -159,7 +159,7 @@ float docking_angle(){
 		try{
                 listener->lookupTransform("base_link", _tag_name, ros::Time(0), transform);
                 }catch (tf::TransformException ex){
-                        ROS_ERROR("%s",ex.what());
+                        ROS_ERROR("docking_angle() ::=>%s",ex.what());
                         ros::Duration(1.0).sleep();
                 }
                 float map_tag_x = transform.getOrigin().x();
@@ -249,10 +249,10 @@ float get_yaw_angle(){
     tf::StampedTransform yaw;
     try{
         ros::Time begin = ros::Time::now();
-        listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(5.0));
+        listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(10.0));
         listener->lookupTransform("base_link", _tag_name,begin, yaw);
     }catch (tf::TransformException ex){
-        ROS_ERROR("%s",ex.what());
+        ROS_ERROR("get_yaw_angle %s",ex.what());
         ros::Duration(1.0).sleep();
     }
     
@@ -268,10 +268,10 @@ Vector2 get_position(){
     tf::StampedTransform transform;
     try{
         ros::Time begin = ros::Time::now();
-        listener->waitForTransform(_tag_name,"base_link",begin,ros::Duration(5.0));
+        listener->waitForTransform(_tag_name,"base_link",begin,ros::Duration(10.0));
         listener->lookupTransform(_tag_name, "base_link",begin, transform);
     }catch (tf::TransformException ex){
-        ROS_ERROR("%s",ex.what());
+        ROS_ERROR("get_position()  ::=> %s",ex.what());
         ros::Duration(1.0).sleep();
     }
     Vector2 pos;
@@ -499,13 +499,20 @@ if(alpha_rad != 0.0){
     float DT            = getAmount(0.1/turn_velocity);
     float goal_angle    = _angle + alpha_rad;
     int   N             = (int)getAmount((goal_angle / M_PI));
-    float rest          = goal_angle - ((float)N * M_PI);
+    float rest          = getAmount(goal_angle) - ((float)N * M_PI);
     
-    if((rest > 0) && (N > 0) ){
+    if((rest > 0) && (N > 0)){
         //This is nessesary because the imu is between -180 - 180
         goal_angle = (goal_angle > M_PI) ? -M_PI + rest : goal_angle;
         goal_angle = (goal_angle < -M_PI) ? M_PI - rest : goal_angle;
     }
+
+/*
+    ROS_ERROR("N= %i ",N);
+    ROS_ERROR("REST = %f",rest);
+    ROS_ERROR("ALPHA = %f",(180/M_PI)*alpha_rad);
+    ROS_ERROR("GOAL_ANGLE = %f",(180/M_PI)*goal_angle);
+*/
     float rad_velocity 	= (alpha_rad < 0) ? (-1)*turn_velocity : turn_velocity;
     bool weiter 	= true; 
     float alpha_old 	= 0;
@@ -636,6 +643,7 @@ void RememberPosition(){
  * Apriltag can be seen by the camera.
  */
 void searchTag(){
+    ROS_INFO("searching Tag ...");
     _find_tag = true;// switch on the callback function findTag
     while(!_TAG_AVAILABLE){
         geometry_msgs::Twist base; 
@@ -652,6 +660,7 @@ void searchTag(){
  * resulting yaw angle of zero deg.
  */
 void adjusting(){
+	ROS_INFO("Adjusting position ...");
 	float yaw = get_yaw_angle();
 	move_angle(-yaw);
 }
@@ -751,11 +760,16 @@ void stopReadingAngle(){
 void positioning(){
 	ROS_INFO("Starte Positioning");
 	RememberPosition();
+	
 	Vector2 pos 	      	    = get_position();
 	startReadingAngle();
 	float a_pos_rad             = _avg_position_angle;
 	stopReadingAngle();
-	if( getAmount(_avg_position_angle) < 6.0*(M_PI/180)){
+	
+	float d = getAmount(sin(_avg_position_angle)*sqrt(pos.x*pos.x+pos.y*pos.y)); 
+	//ROS_ERROR("D = %f",d);
+
+	if( d < 0.08){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
 	    _start_avg = false;
@@ -794,8 +808,9 @@ void positioning(){
             }else{
                 this->move_angle((M_PI/2));
             }
+            this->searchTag();
             ros::Duration(1.0).sleep();
-            this->adjusting();
+	    this->adjusting();
             ros::Duration(1.0).sleep();
             
             startReadingAngle();
@@ -803,7 +818,7 @@ void positioning(){
             stopReadingAngle();
             
             a_pos_deg = (180/M_PI) * a_pos_rad;
-            
+            ROS_ERROR("A_POS_DEG = %f",a_pos_deg); 
             if(a_pos_deg < 20.0){
                 if(a_pos_deg < 10.0){
                     startReadingAngle();
@@ -880,6 +895,10 @@ void docking(){
 void startDocking(){
 
 	move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
+
+	searchTag();
+	ros::Duration(2.0).sleep();
+	adjusting();
 	ros::Duration(2.0).sleep();	
 	searchTag();
 	ros::Duration(2.0).sleep();
