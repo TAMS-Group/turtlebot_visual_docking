@@ -2,7 +2,7 @@
 //<9poreski@informatik.uni-hamburg.de>
 //
 
-translate([0,0,15]){
+translate([0,0,25]){
     difference(){
     cube([8,2,8],center=true);
         translate([0,0,-4]){
@@ -12,8 +12,8 @@ translate([0,0,15]){
 }
 
 
-translate([0,0,7]){
-    cube([5,0.97,4],center=true);
+translate([0,0,11.5]){
+    cube([12.5,0.97,12.5],center=true);
 }
 
 translate([0,0,0]){
