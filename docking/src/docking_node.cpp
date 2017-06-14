@@ -86,10 +86,9 @@ std::mutex 		_g_mutex;
 float 			_avg_position_angle;
 float 			_avg_docking_angle;
 std::string 		_tag_name;
-double 			_STOP_DISTANCE;
 bool                    _bumper_pressed;
-
-
+double			_TURTLEBOT_PRE_DOCKING_POSE_X;
+double			_TURTLEBOT_PRE_DOCKING_POSE_Y;
 /**
  * This function returns the amount of in.
  */
@@ -335,10 +334,18 @@ Docking(){
             ROS_ERROR("No Parameters found!");
             exit(0);
 	}
-        if (!_n.getParam("/dock/stop_distance", _STOP_DISTANCE)){
-            ROS_ERROR("No Parameters for Stop_Distance found!");
-            exit(0);
+
+	if(!_n.getParam("dock/pre_docking_pose_x",_TURTLEBOT_PRE_DOCKING_POSE_X)){
+	   ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_X");
+	   exit(0);
+	}
+
+
+	if(!_n.getParam("dock/pre_docking_pose_y",_TURTLEBOT_PRE_DOCKING_POSE_Y)){
+           ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_Y");
+	   exit(0);
         }
+
 	//exit(0);
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
@@ -419,7 +426,8 @@ if(status == 6 ){
 void get_avg_position_angle(const apriltags_ros::AprilTagDetectionArray& msg){
 if(_start_avg){
 	apriltags_ros::AprilTagDetection detection;
-        int size = msg.detections.size() ;
+        int size = msg.detections.size();
+//	ROS_ERROR("SIZE=%i",size);
 	if(size == 1){
             apriltags_ros::AprilTagDetection detect = msg.detections[0];
             int id                                  = detect.id;
@@ -595,7 +603,7 @@ void move_to(float x, float y){
     ac.sendGoal(goal);
 
     ac.waitForResult();
-    ROS_INFO("Ausgangsposition erreicht");
+    ROS_INFO("Goal has been reached!");
 
 }
 
@@ -653,7 +661,7 @@ void adjusting(){
  */
 void linear_approach(){
     adjusting();
-    ROS_INFO("Begin fine positioning");
+    ROS_INFO("Begin linear approach");
     Vector2 pos 		= get_position();
     Vector2 t;
     t.x = 1.0;
@@ -661,7 +669,7 @@ void linear_approach(){
     startReadingAngle();
     float alpha         = _avg_position_angle;
     stopReadingAngle();
-    float alpha_deg    = (180/M_PI)*alpha;
+    float alpha_deg     = (180/M_PI)*alpha;
     float epsilon       = epsi(pos.x);
     Vector2 vec2 	= spinVector(t,epsilon);
     Vector2               vec_n;//Vector vec2 normieren 
@@ -671,7 +679,7 @@ void linear_approach(){
     float d = -1*((t.y * vec_n.x)/(vec_n.y)) - t.x;
     d = (-1)*d;
     ROS_INFO("DISTANCE = %f",d);
-    ROS_INFO("WINKEL= %f",(180/M_PI)*alpha);
+    ROS_INFO("ANGLE= %f",(180/M_PI)*alpha);
     ROS_INFO("EPSILON= %f",epsilon*(180/M_PI));
     if (d < 0.10){
         ROS_INFO("Distance to short --> Repositioning ");
@@ -730,7 +738,7 @@ void  startReadingAngle(){
         _avg_pos->flush_array();
         _avg_dock->flush_array();
         _start_avg = true;
-        ros::Duration(2.0).sleep();
+        ros::Duration(4.0).sleep();
 }
 
 void stopReadingAngle(){
@@ -747,8 +755,10 @@ void positioning(){
 	startReadingAngle();
 	float a_pos_rad             = _avg_position_angle;
 	stopReadingAngle();
-	if( getAmount(_avg_position_angle) < 11.0*(M_PI/180)){
-            _start_avg = false;
+	if( getAmount(_avg_position_angle) < 6.0*(M_PI/180)){
+	    ROS_INFO("Start frontal docking without positioning...");
+	    ROS_INFO("Angle = %f",_avg_position_angle);
+	    _start_avg = false;
             ros::Duration(1.0).sleep();
             _avg_pos->flush_array();
             _avg_dock->flush_array();
@@ -814,6 +824,7 @@ void positioning(){
  * described in section 6.3
  */
 void docking(){
+//    ROS_INFO("Startring frontal docking...");
     geometry_msgs::Twist      base;
     float DELTA             = 2.0;
     _try_more                = false;
@@ -833,7 +844,7 @@ void docking(){
             base.angular.z = -0.27;
         }else{
             base.angular.z = 0;
-        if(pos.y > _STOP_DISTANCE + 0.20 ){
+        if(pos.y > 0.44 ){
 		base.linear.x = 0.1;// We should drive very slow
 	}else{
 		base.linear.x = 0.02;
@@ -868,6 +879,8 @@ void docking(){
  */
 void startDocking(){
 
+	move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
+	ros::Duration(2.0).sleep();	
 	searchTag();
 	ros::Duration(2.0).sleep();
 	positioning();
@@ -886,7 +899,7 @@ int main(int argc, char **argv){
         Docking *d = new Docking();
        
 	//We have to drive to [2.867, 1.030, 0.010]
-	d->move_to(2.867 , 1.030);
+//	d->move_to(2.867 , 1.030);
  
 	d->startDocking();
 
