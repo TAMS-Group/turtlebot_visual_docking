@@ -329,7 +329,7 @@ Docking(){
 	std::string tag_id;
 	if (_n.getParam("/dock/tag_id", tag_id)){
             _tag_name = "tag_" + tag_id;
-  	     //ROS_INFO(" tag_id = %s",_tag_name.c_str());
+  	     ROS_INFO(" tag_id = %s",_tag_name.c_str());
 	}else{
             ROS_ERROR("No Parameters found!");
             exit(0);
@@ -485,6 +485,7 @@ void findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 		apriltags_ros::AprilTagDetection detection;
 		int size = msg.detections.size() ;
 		_TAG_AVAILABLE = (size == 1);
+		//ROS_ERROR("Size = %i",size);
 	}
 }
 
