@@ -713,7 +713,8 @@ void linear_approach(){
                 base.angular.z  = 0;
                 base.linear.x   = 2*0.035;
                 alpha_neu       = (180/M_PI)*(_avg_position_angle);
-                _publisher.publish(base);
+                ros::Duration(0.5).sleep();
+		_publisher.publish(base);
             }
         }
         if(alpha > 0.0){ //TURN LEFT
@@ -726,6 +727,7 @@ void linear_approach(){
                 base.angular.z  = 0;
                 base.linear.x   = 2*0.035;
                 alpha_neu       = (180/M_PI)*(_avg_position_angle);
+		ros::Duration(0.5).sleep();
                 _publisher.publish(base);
                 }
         }
