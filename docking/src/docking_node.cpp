@@ -101,6 +101,23 @@ float getAmount(float in){
 	}
 }
 
+
+
+Vector2 normalize(Vector2 vec){
+
+Vector2 result;
+float len = sqrt(vec.x*vec.x+vec.y*vec.y);
+if(len == 0.0){
+        ROS_ERROR("normalize(): This vector does have a length of zero");
+        exit(0);
+}else{
+ result.x  =  (1/len) * vec.x;
+ result.y  =  (1/len) * vec.y;
+ return result;
+}
+}
+
+
 /**
  * Diese Funktion gibt einen Vector zurück, der um angle Grad 
  * gedreht wurde.
@@ -671,6 +688,7 @@ void adjusting(){
  */
 void linear_approach(){
     adjusting();
+    ros::Duration(5.0).sleep();
     ROS_INFO("Begin linear approach");
     Vector2 pos 		= get_position();
     Vector2 t;
@@ -680,25 +698,19 @@ void linear_approach(){
     float alpha         = _avg_position_angle;
     stopReadingAngle();
     float alpha_deg     = (180/M_PI)*alpha;
-    float epsilon       = epsi(pos.x);
+    float epsilon       = epsi(pos.x) - (M_PI/180)*2;
     Vector2 vec2 	= spinVector(t,epsilon);
-    Vector2               vec_n;//Vector vec2 normieren 
-    vec_n.x             =  1/(sqrt(vec2.x*vec2.x+vec2.y*vec2.y)) * vec2.x;
-    vec_n.y             =  1/(sqrt(vec2.x*vec2.x+vec2.y*vec2.y)) * vec2.y;
+    Vector2 vec_n	= normalize(vec2);
     //Bedingung die zu prüfen ist
-    float d = -1*((t.y * vec_n.x)/(vec_n.y)) - t.x;
-    d = (-1)*d;
+    float d = ((0.25 - 1)/-0.25) * tan((M_PI/2) - epsilon) * pos.x;
+
     ROS_INFO("DISTANCE = %f",d);
+    ROS_INFO("DIST_POS = %f",pos.y);
     ROS_INFO("ANGLE= %f",(180/M_PI)*alpha);
     ROS_INFO("EPSILON= %f",epsilon*(180/M_PI));
-    if (d < 0.10){
+    if (d > pos.y){
         ROS_INFO("Distance to short --> Repositioning ");
-        //Positioniere dich neu
-        move_angle(M_PI);
-        drive_forward(0.50);
-        move_angle(-M_PI);
-        ros::Duration(3.0).sleep();
-        linear_approach();
+	positioning();
         return;
     }else{
         startReadingAngle();
@@ -711,7 +723,7 @@ void linear_approach(){
             while(alpha_neu < 0.0){
                 geometry_msgs::Twist    base;
                 base.angular.z  = 0;
-                base.linear.x   = 2*0.035;
+                base.linear.x   = 0.035;
                 alpha_neu       = (180/M_PI)*(_avg_position_angle);
                 ros::Duration(0.5).sleep();
 		_publisher.publish(base);
@@ -725,10 +737,11 @@ void linear_approach(){
             while(alpha_neu > 0.0){
                 geometry_msgs::Twist    base;
                 base.angular.z  = 0;
-                base.linear.x   = 2*0.035;
+                base.linear.x   = 0.035;
                 alpha_neu       = (180/M_PI)*(_avg_position_angle);
 		ros::Duration(0.5).sleep();
-                _publisher.publish(base);
+                ROS_ERROR("alpha = %f",alpha_neu);
+		_publisher.publish(base);
                 }
         }
         ROS_INFO("STOP");
@@ -923,8 +936,8 @@ int main(int argc, char **argv){
 	//We have to drive to [2.867, 1.030, 0.010]
 //	d->move_to(2.867 , 1.030);
  
-	d->startDocking();
-
+	d->startDocking();	
+//	d->linear_approach();
 	ros::spin();
         return 0;
 }
