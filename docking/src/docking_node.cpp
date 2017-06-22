@@ -68,10 +68,13 @@ ros::Subscriber 	_sub3;
 ros::Subscriber		_sub4;
 ros::Subscriber		_sub5;
 ros::Subscriber		_sub6;
+ros::Subscriber		_sub7;
 double 			_angle;
 ros::NodeHandle		_n;
 tf::StampedTransform    _transform_cam_base;
 tf::StampedTransform    _transform_optical_cam;
+int 			_ticks_right;
+int 			_ticks_left;
 bool			_find_tag;
 float 			_start_pos_x;
 float                   _start_pos_y;
@@ -342,6 +345,8 @@ Docking(){
 	_sub5 = _n.subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
         _sub6 = _n.subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
 
+	_sub7 = _n.subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
+
         //The Parameters are read. 
 	std::string tag_id;
 	if (_n.getParam("/dock/tag_id", tag_id)){
@@ -368,6 +373,14 @@ Docking(){
         ros::Duration(5.0).sleep();
         //All other variables get initilized
         Init();
+}
+
+
+
+void get_ticks(const kobuki_msgs::SensorState& msg){
+
+	_ticks_right = msg.right_encoder;
+	_ticks_left  = msg.left_encoder;	
 }
 
 
@@ -589,6 +602,34 @@ void drive_forward(float d){
         ros::Duration(0.5).sleep(); 
     }
 }
+
+void drive_forward2(float distance){
+
+
+float start_ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
+float dmm 	 = distance * 1000;
+//We know that the ticks_velocity sould be  11.7 ticks per mm.
+// But if we test this we actually have to use 9.4 ticks/mm
+float end_ticks  = start_ticks + 9.4 * dmm;
+
+// Now we drive forward until the end_ticks have been reached
+float ticks 	 = 0.5 * ((float)_ticks_right + (float)_ticks_left);
+
+ROS_ERROR("START_TICKS = %f",start_ticks);
+ROS_ERROR("END_TICKS = %f",end_ticks);
+
+while(ticks< end_ticks){
+	geometry_msgs::Twist base;
+	ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
+	base.angular.z = 0;
+        base.linear.x = 0.3;
+        _publisher.publish(base);
+	ros::Duration(0.5).sleep();
+}
+
+}
+
+
 
 /**
  * This function drives an exact distance backwards.
@@ -935,7 +976,8 @@ int main(int argc, char **argv){
        
 	//We have to drive to [2.867, 1.030, 0.010]
 //	d->move_to(2.867 , 1.030);
- 
+
+//	d->drive_forward2(1.00); 
 	d->startDocking();	
 //	d->linear_approach();
 	ros::spin();
