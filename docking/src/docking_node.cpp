@@ -612,15 +612,21 @@ float dmm 	 = distance * 1000;
 // But if we test this we actually have to use 9.4 ticks/mm
 float end_ticks  = start_ticks + 9.4 * dmm;
 
+if(end_ticks > 65535){
+	end_ticks = end_ticks - 65535.0;
+}
+
+
 // Now we drive forward until the end_ticks have been reached
 float ticks 	 = 0.5 * ((float)_ticks_right + (float)_ticks_left);
 
 ROS_ERROR("START_TICKS = %f",start_ticks);
 ROS_ERROR("END_TICKS = %f",end_ticks);
 
-while(ticks< end_ticks){
+while(ticks < end_ticks){
 	geometry_msgs::Twist base;
 	ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
+	ROS_ERROR("Ticks= %f",ticks);
 	base.angular.z = 0;
         base.linear.x = 0.3;
         _publisher.publish(base);
