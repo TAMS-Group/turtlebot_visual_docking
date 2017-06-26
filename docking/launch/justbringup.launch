@@ -4,7 +4,7 @@
 <include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot_navigation.launch"  />
 <!-- size: 0.077-->
 
-<arg name="tag_param" default="[{id: $(env RPC_DOCK_ID),size: 0.105}]"/>
+<arg name="tag_param" default="[{id: $(env RPC_DOCK_ID),size: 0.125}]"/>
 
 <node pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector">
     <rosparam param="tag_descriptions" subst_value="True" >$(arg tag_param)</rosparam>
