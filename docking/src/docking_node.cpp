@@ -85,7 +85,11 @@ bool 			_start_avg;
 bool 			_TAG_AVAILABLE;		
 Avg			*_avg_pos;
 Avg			*_avg_dock;
+Avg			*_avg_X;
+Avg			*_avg_Y;
 std::mutex 		_g_mutex; 
+float 			_avg_position_X;
+float 			_avg_position_Y;
 float 			_avg_position_angle;
 float 			_avg_docking_angle;
 std::string 		_tag_name;
@@ -312,6 +316,8 @@ void Init(){
     _bumper_pressed     = false;
     _avg_pos 		= new Avg(40);
     _avg_dock		= new Avg(10);
+    _avg_X 		= new Avg(40);
+    _avg_Y		= new Avg(40);
 }
 
 public: 
@@ -480,24 +486,33 @@ if(_start_avg){
             tf::Transform tag_base = tag_cam * _transform_cam_base;
             tf::Transform base_tag = tag_base.inverse();
             // The transform CAM -> BASE is constant in all coordinate systems
-            float _x	= base_tag.getOrigin().x();
-            float _y	= base_tag.getOrigin().y();
-            float _z	= base_tag.getOrigin().z();
+            float xx	= base_tag.getOrigin().x();
+            float yy	= base_tag.getOrigin().y();
+            float zz	= base_tag.getOrigin().z();
             float yaw   = tf::getYaw(base_tag.getRotation());
-            if( getAmount(_x) <  0.0001){
+            if( getAmount(xx) <  0.0001){
                 ROS_ERROR("Division through zero is not allowed!");
                 exit(0);
             }else{
-                float alpha_dock   = atan(_y/_x);
+                float alpha_dock   = atan(yy/xx);
                 float alpha_pos    = alpha_dock - (M_PI/2 + yaw);
-                _g_mutex.lock();
+               
+
+		_g_mutex.lock();
                     if(std::isfinite(alpha_pos)){
                         _avg_pos->new_value(alpha_pos);
                         _avg_dock->new_value(alpha_dock);
-                        float avg_pos_angle  = _avg_pos->avg();
-                        float avg_dock_angle = _avg_dock->avg();
-                        _avg_position_angle = avg_pos_angle;
-                        _avg_docking_angle  = avg_dock_angle;
+                        _avg_X->new_value(x);
+			_avg_Y->new_value(y);
+			float avg_pos_angle  	= _avg_pos->avg();
+                        float avg_dock_angle 	= _avg_dock->avg();
+			float avg_position_X 	= _avg_X->avg();
+			float avg_position_Y 	= _avg_Y->avg();
+                        _avg_position_angle 	= avg_pos_angle;
+                        _avg_docking_angle  	= avg_dock_angle;
+			_avg_position_X 	= avg_position_X;
+			_avg_position_Y         = avg_position_Y;
+ 
                     }
 		_g_mutex.unlock();
             }
@@ -569,6 +584,7 @@ if(alpha_rad != 0.0){
  * 
  * TODO: Try the callibration with different velocitys.
  */
+/*
 void drive_forward(float d){
 
     float velocity      = 0.15;
@@ -602,33 +618,43 @@ void drive_forward(float d){
         ros::Duration(0.5).sleep(); 
     }
 }
+*/
 
-void drive_forward2(float distance){
+void drive_forward(float dist){
 
-
+// The direction should be 1 for forward and -1 for backwards
+float distance 	   = getAmount(dist);
+float direction    = dist / getAmount(distance);
+ 
 float start_ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-float dmm 	 = distance * 1000;
-//We know that the ticks_velocity sould be  11.7 ticks per mm.
+float dmm 	   = distance * 1000;
+// We know that the ticks_velocity sould be  11.7 ticks per mm.
 // But if we test this we actually have to use 9.4 ticks/mm
-float end_ticks  = start_ticks + 9.4 * dmm;
+float end_ticks  = start_ticks + direction *(9.4 * dmm);
+ROS_ERROR("START_TICKS = %f",start_ticks);
+ROS_ERROR("END_TICKS = %f",end_ticks);
+
 
 if(end_ticks > 65535){
 	end_ticks = end_ticks - 65535.0;
 }
 
+if(end_ticks < 0){
+	end_ticks = 65535.0 - end_ticks;
+}
 
 // Now we drive forward until the end_ticks have been reached
 float ticks 	 = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-
-ROS_ERROR("START_TICKS = %f",start_ticks);
+//ROS_ERROR("DISTANCE = %f",distance);
+//ROS_ERROR("DIRECTION = %f",direction);
 ROS_ERROR("END_TICKS = %f",end_ticks);
 
-while(ticks < end_ticks){
+while(direction*ticks < direction*end_ticks){
 	geometry_msgs::Twist base;
 	ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-	ROS_ERROR("Ticks= %f",ticks);
+	//ROS_ERROR("Ticks= %f",ticks);
 	base.angular.z = 0;
-        base.linear.x = 0.3;
+        base.linear.x = direction * 0.3;
         _publisher.publish(base);
 	ros::Duration(0.5).sleep();
 }
@@ -823,16 +849,15 @@ void stopReadingAngle(){
 void positioning(){
 	ROS_INFO("Starte Positioning");
 	RememberPosition();
-	
-	Vector2 pos 	      	    = get_position();
 	startReadingAngle();
-	float a_pos_rad             = _avg_position_angle;
+		float a_pos_rad             = _avg_position_angle;
+		Vector2 pos;
+		pos.x = _avg_position_X;
+		pos.y = _avg_position_Y;
 	stopReadingAngle();
-	
-	float d = getAmount(sin(_avg_position_angle)*sqrt(pos.x*pos.x+pos.y*pos.y)); 
-	//ROS_ERROR("D = %f",d);
+	ROS_ERROR("Angle  = %f",(180/M_PI)*a_pos_rad);
 
-	if( d < 0.08){
+	if( a_pos_rad  < 5*(M_PI/180)){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
 	    _start_avg = false;
@@ -963,8 +988,6 @@ void startDocking(){
 	ros::Duration(2.0).sleep();
 	adjusting();
 	ros::Duration(2.0).sleep();	
-	searchTag();
-	ros::Duration(2.0).sleep();
 	positioning();
 }	
 
@@ -983,7 +1006,8 @@ int main(int argc, char **argv){
 	//We have to drive to [2.867, 1.030, 0.010]
 //	d->move_to(2.867 , 1.030);
 
-//	d->drive_forward2(1.00); 
+	//d->drive_forward2(-1.00); 
+	//d->drive_forward2(1.00);
 	d->startDocking();	
 //	d->linear_approach();
 	ros::spin();
