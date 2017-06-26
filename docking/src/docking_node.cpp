@@ -855,9 +855,9 @@ void positioning(){
 		pos.x = _avg_position_X;
 		pos.y = _avg_position_Y;
 	stopReadingAngle();
-	ROS_ERROR("Angle  = %f",(180/M_PI)*a_pos_rad);
+	//ROS_ERROR("Angle  = %f",(180/M_PI)*a_pos_rad);
 
-	if( a_pos_rad  < 5*(M_PI/180)){
+	if( getAmount(a_pos_rad)  < 5*(M_PI/180)){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
 	    _start_avg = false;
