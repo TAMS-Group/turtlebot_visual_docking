@@ -60,6 +60,8 @@ struct Vector2{
   
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
+
+MoveBaseClient		*_ac;
 tf::TransformListener   *listener;
 ros::Publisher          _publisher;
 ros::Subscriber 	_sub1;
@@ -304,6 +306,12 @@ Vector2 get_position(){
     return pos;
 }
 
+
+
+
+
+
+
 void Init(){
     get_cameraLink_baseLink();
     get_optical_frame();
@@ -338,8 +346,12 @@ void startFrontalDocking(){
 
 
 Docking(){
-        ros::NodeHandle _n;
-        listener    = new tf::TransformListener();
+        
+	ros::NodeHandle _n;
+        
+	_ac  = new MoveBaseClient("move_base", true);
+
+	listener    = new tf::TransformListener();
     
         _publisher = _n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
 	
@@ -352,7 +364,6 @@ Docking(){
         _sub6 = _n.subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
 
 	_sub7 = _n.subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
-
         //The Parameters are read. 
 	std::string tag_id;
 	if (_n.getParam("/dock/tag_id", tag_id)){
@@ -360,18 +371,21 @@ Docking(){
   	     ROS_INFO(" tag_id = %s",_tag_name.c_str());
 	}else{
             ROS_ERROR("No Parameters found!");
-            exit(0);
+	    _tag_name = "tag_99";
+           // exit(0);
 	}
 
 	if(!_n.getParam("dock/pre_docking_pose_x",_TURTLEBOT_PRE_DOCKING_POSE_X)){
 	   ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_X");
-	   exit(0);
+	   _TURTLEBOT_PRE_DOCKING_POSE_X = 2.97; 
+	   //exit(0);
 	}
 
 
 	if(!_n.getParam("dock/pre_docking_pose_y",_TURTLEBOT_PRE_DOCKING_POSE_Y)){
            ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_Y");
-	   exit(0);
+	   _TURTLEBOT_PRE_DOCKING_POSE_Y = -0.46;
+	   //exit(0);
         }
 
 	//exit(0);
@@ -620,47 +634,84 @@ void drive_forward(float d){
 }
 */
 
+
+
+/* 
+* TODO: long distances backwards driving does still not work	
+*
+*/
 void drive_forward(float dist){
+
+// This is the maximum ticks number after this number 
+// the ticks count jumps back to zero
+float MAX_TICKS 	= 65535.0;
+float TICKS_PER_MM 	= 9.4; 
 
 // The direction should be 1 for forward and -1 for backwards
 float distance 	   = getAmount(dist);
 float direction    = dist / getAmount(distance);
- 
 float start_ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
 float dmm 	   = distance * 1000;
-// We know that the ticks_velocity sould be  11.7 ticks per mm.
+// We know that the ticks_velocity sould be 11.7 ticks per mm.
 // But if we test this we actually have to use 9.4 ticks/mm
-float end_ticks  = start_ticks + direction *(9.4 * dmm);
-ROS_ERROR("START_TICKS = %f",start_ticks);
-ROS_ERROR("END_TICKS = %f",end_ticks);
+float end_ticks    = start_ticks + direction *(TICKS_PER_MM * dmm);
+
+int Num 	   = (int)((TICKS_PER_MM * dmm) / MAX_TICKS);
+ROS_INFO("Num = %i",Num); 
+//If the end_ticks variable is bigger than 65535 we jump to zero to 0 
+end_ticks = (end_ticks > MAX_TICKS) ? fmod(end_ticks,MAX_TICKS) : end_ticks;
+//If the end_ticks variable is smaller than 0 the ticks jump to the MAX_TICKS
+end_ticks = (end_ticks < 0) ? end_ticks = MAX_TICKS - getAmount(end_ticks) : end_ticks;
 
 
-if(end_ticks > 65535){
-	end_ticks = end_ticks - 65535.0;
-}
-
-if(end_ticks < 0){
-	end_ticks = 65535.0 - end_ticks;
-}
 
 // Now we drive forward until the end_ticks have been reached
 float ticks 	 = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-//ROS_ERROR("DISTANCE = %f",distance);
-//ROS_ERROR("DIRECTION = %f",direction);
-ROS_ERROR("END_TICKS = %f",end_ticks);
+int count        = 0;
+while(count <= Num){
+ROS_INFO("count = %i",count);
 
-while(direction*ticks < direction*end_ticks){
+if(count < Num){ // Now the robot has to drive the full 65535 ticks => 7m
+
+float start 	  = (float)_ticks_right;
+float restTicks   = MAX_TICKS - start; 
+ROS_INFO("restTicks = %f",restTicks);
+float drivenTicks = 0;
+int   N		  = 0;
+float ticks_old   = 0;
+while(drivenTicks < MAX_TICKS ){
+        geometry_msgs::Twist base;
+        
+	ticks  = _ticks_right; // No avg!!
+	
+	if ( ticks_old > ticks ) // This means we have reached the Max
+			N++;
+	float xx = (N == 0) ? ticks - start : ticks;
+	drivenTicks = ((float)N * restTicks) + xx;
+	//ROS_INFO(" --> %f",drivenTicks);
+        base.angular.z = 0;
+        base.linear.x = direction * 0.3;
+        _publisher.publish(base);
+        ros::Duration(0.5).sleep();
+	ticks_old = ticks;
+}
+
+}
+
+
+if(count == Num){// In this case the robot has to drive the rest
+while((direction*ticks < direction*end_ticks) ){
 	geometry_msgs::Twist base;
 	ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-	//ROS_ERROR("Ticks= %f",ticks);
 	base.angular.z = 0;
         base.linear.x = direction * 0.3;
         _publisher.publish(base);
 	ros::Duration(0.5).sleep();
 }
-
 }
-
+count++;
+}
+}
 
 
 /**
@@ -680,9 +731,9 @@ void drive_backward(float distance){
 
 void move_to(float x, float y){
 
-    MoveBaseClient ac("move_base", true);
+    //MoveBaseClient ac("move_base", true);
     
-    while(!ac.waitForServer(ros::Duration(5.0))){
+    while(!_ac->waitForServer(ros::Duration(5.0))){
         ROS_INFO("Waiting for the move_base action server to come up");
     }
     move_base_msgs::MoveBaseGoal goal;
@@ -698,12 +749,46 @@ void move_to(float x, float y){
     goal.target_pose.pose.orientation.w = 1.0 ;
 
     ROS_INFO("Sending goal");
-    ac.sendGoal(goal);
+    _ac->sendGoal(goal);
 
-    ac.waitForResult();
+    _ac->waitForResult();
     ROS_INFO("Goal has been reached!");
 
 }
+
+/**
+ * This function dirves to the given coordinates, which are relativly 
+ * to the robots coordinate frame.
+ * The robot dies not need to know its position
+ * 
+ */
+
+void move_rel_to(float x, float y){
+
+   //MoveBaseClient ac("move_base", true);
+
+    while(!_ac->waitForServer(ros::Duration(5.0))){
+        ROS_INFO("Waiting for the move_base action server to come up");
+    }
+    move_base_msgs::MoveBaseGoal goal;
+
+    goal.target_pose.header.frame_id = "base_link";
+    goal.target_pose.header.stamp = ros::Time::now();
+
+    goal.target_pose.pose.position.x = x;
+    goal.target_pose.pose.position.y = y;
+
+    goal.target_pose.pose.orientation.w = 1.0 ;
+
+    ROS_INFO("Sending goal");
+    _ac->sendGoal(goal);
+
+    _ac->waitForResult();
+    ROS_INFO("Goal has been reached!");
+
+}
+
+
 
 
 
@@ -842,6 +927,31 @@ void  startReadingAngle(){
 void stopReadingAngle(){
 	_start_avg = false;
 }
+
+
+void move_base_positioning(){
+
+	ROS_INFO("Starting positioning with move base ...");
+	
+	startReadingAngle();
+                float a_pos_rad             = _avg_position_angle;
+                Vector2 pos;
+                pos.x = _avg_position_X;
+                pos.y = _avg_position_Y;
+        stopReadingAngle();
+
+
+	float y = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+	
+
+	ROS_INFO("Calculated Way (y)  = %f",y);
+
+
+	move_rel_to(0,y);
+
+
+}
+
 
 /**
  * This function does the positioning described in section 6.1
@@ -982,13 +1092,18 @@ void docking(){
  */
 void startDocking(){
 
-	move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
+	imove_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 
 	searchTag();
 	ros::Duration(2.0).sleep();
 	adjusting();
 	ros::Duration(2.0).sleep();	
-	positioning();
+//	positioning();
+	move_base_positioning();
+	
+	ros::Duration(2.0).sleep();
+
+	docking();
 }	
 
 };
@@ -1007,8 +1122,9 @@ int main(int argc, char **argv){
 //	d->move_to(2.867 , 1.030);
 
 	//d->drive_forward2(-1.00); 
-	//d->drive_forward2(1.00);
-	d->startDocking();	
+	//d->drive_forward(15.00);
+	//exit(0);
+		d->startDocking();	
 //	d->linear_approach();
 	ros::spin();
         return 0;
