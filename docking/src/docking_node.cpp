@@ -754,13 +754,6 @@ void drive_forward(float distance){
 ROS_INFO("Start to move forward ...");
 float velocity      = 0.15;
 float direction     = distance * getAmount(distance); 
-// Actually because we drive forward we only need to whatch the x-axis
-//XXX
-tf::Quaternion *quat_zero = new tf::Quaternion(0.0,0.0,0.0,1);
-tf::Vector3 *way = new tf::Vector3(tfScalar(distance),
-                                    tfScalar(0.0),
-                                    tfScalar(0.0));
-
 // We actually save the start Transformation
 tf::Transform *startTransform = _Odometry_Transform;
 tf::Vector3 startPos 	      = startTransform->getOrigin();
@@ -769,7 +762,7 @@ float driven_x 		      = 0.0;
 float driven_y  	      = 0.0;
 tf::Vector3 pos_now;
 
-while( goal <= distance ) {
+while( direction*goal <= direction * distance ) {
         geometry_msgs::Twist base;
         base.angular.z = 0;
         base.linear.x = direction*velocity;
@@ -780,7 +773,7 @@ while( goal <= distance ) {
         pos_now 	    = _Odometry_Transform->getOrigin();
 	driven_x       	    = pos_now.getX() - startPos.getX();
         driven_y            = pos_now.getY() - startPos.getY();
-        goal 	            = sqrt(driven_x*driven_x + driven_y*driven_y);
+        goal 	            = direction * sqrt(driven_x*driven_x + driven_y*driven_y);
 	ROS_INFO("The driven distance is: %f",goal);
 
 	// We wait, to reduce the number of sended TwistMessages.
@@ -1201,7 +1194,6 @@ int main(int argc, char **argv){
         Docking *d = new Docking();
        
 	d->startDocking();	
-	
 	ros::spin();
         return 0;
 }
