@@ -398,12 +398,12 @@ Docking(){
 	   //exit(0);
         }
 
-	Init();
+	//Init();
 	//exit(0);
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized
-        //Init();
+        Init();
 }
 
 
@@ -538,14 +538,13 @@ if(_start_avg){
             float yy	= base_tag.getOrigin().y();
             float zz	= base_tag.getOrigin().z();
             float yaw   = tf::getYaw(base_tag.getRotation());
-            if( getAmount(xx) <  0.0001){
-                ROS_ERROR("Division through zero is not allowed!");
-                exit(0);
+            if( getAmount(xx) <  0.00001){
+                ROS_ERROR("Division through zero is not allowed! xx=%f, yy= %f",xx,yy);
+                //exit(0);
+		return;
             }else{
                 float alpha_dock   = atan(yy/xx);
                 float alpha_pos    = alpha_dock - (M_PI/2 + yaw);
-               
-
 		_g_mutex.lock();
                     if(std::isfinite(alpha_pos)){
                         _avg_pos->new_value(alpha_pos);
@@ -1032,7 +1031,7 @@ void move_base_positioning(){
  * This function does the positioning described in section 6.1
  */
 void positioning(){
-	ROS_INFO("Starte Positioning");
+	ROS_INFO("Staring positioning...");
 	RememberPosition();
 	startReadingAngle();
 		float a_pos_rad             = _avg_position_angle;
@@ -1173,8 +1172,8 @@ void startDocking(){
 	ros::Duration(2.0).sleep();
 	adjusting();
 	ros::Duration(2.0).sleep();	
-//	positioning();
-	move_base_positioning();
+	positioning();
+//	move_base_positioning();
 	
 	ros::Duration(2.0).sleep();
 
