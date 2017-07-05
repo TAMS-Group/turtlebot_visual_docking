@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sensor_msgs/Imu.h> 
 #include <kobuki_msgs/SensorState.h>
 #include <kobuki_msgs/BumperEvent.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/LinearMath/Vector3.h>
 #include "avg.cpp"
 #include <mutex>
@@ -71,6 +72,7 @@ ros::Subscriber		_sub4;
 ros::Subscriber		_sub5;
 ros::Subscriber		_sub6;
 ros::Subscriber		_sub7;
+ros::Subscriber		_sub8;
 double 			_angle;
 ros::NodeHandle		_n;
 tf::StampedTransform    _transform_cam_base;
@@ -98,6 +100,9 @@ std::string 		_tag_name;
 bool                    _bumper_pressed;
 double			_TURTLEBOT_PRE_DOCKING_POSE_X;
 double			_TURTLEBOT_PRE_DOCKING_POSE_Y;
+Vector2			_odom_pos;
+tf::Transform 		*_Odometry_Transform;
+
 /**
  * This function returns the amount of in.
  */
@@ -326,6 +331,8 @@ void Init(){
     _avg_dock		= new Avg(10);
     _avg_X 		= new Avg(40);
     _avg_Y		= new Avg(40);
+    _odom_pos.x 	= 0.0;
+    _odom_pos.y		= 0.0;
 }
 
 public: 
@@ -364,6 +371,9 @@ Docking(){
         _sub6 = _n.subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
 
 	_sub7 = _n.subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
+	_sub8 = _n.subscribe("/odom",1,&Docking::get_odom_pos,this);
+	
+
         //The Parameters are read. 
 	std::string tag_id;
 	if (_n.getParam("/dock/tag_id", tag_id)){
@@ -388,11 +398,35 @@ Docking(){
 	   //exit(0);
         }
 
+	Init();
 	//exit(0);
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized
-        Init();
+        //Init();
+}
+
+
+
+/**
+* This callback function reads the Odometry and saves it into the _odom_pos Vector
+*/
+void get_odom_pos(const nav_msgs::Odometry& msg){
+
+	
+//	ROS_ERROR("X = %f",msg.pose.pose.position.x);
+	_odom_pos.x = msg.pose.pose.position.x;
+	_odom_pos.y = msg.pose.pose.position.y; 
+
+	tf::Quaternion *quaternion = new tf::Quaternion(msg.pose.pose.orientation.x,
+                                                        msg.pose.pose.orientation.y,
+                                                        msg.pose.pose.orientation.y,
+                                                        msg.pose.pose.orientation.w);
+        tf::Vector3 *pose = new tf::Vector3(tfScalar(msg.pose.pose.position.x),
+                                            tfScalar(msg.pose.pose.position.y),
+                                            tfScalar(msg.pose.pose.position.z));
+        _Odometry_Transform = new tf::Transform(*quaternion,*pose);
+           
 }
 
 
@@ -640,7 +674,7 @@ void drive_forward(float d){
 * TODO: long distances backwards driving does still not work	
 *
 */
-void drive_forward(float dist){
+void drive_forward_ticks(float dist){
 
 // This is the maximum ticks number after this number 
 // the ticks count jumps back to zero
@@ -712,6 +746,54 @@ while((direction*ticks < direction*end_ticks) ){
 count++;
 }
 }
+
+
+
+void drive_forward(float distance){
+
+ROS_INFO("Start to move forward ...");
+float velocity      = 0.15;
+float direction     = distance * getAmount(distance); 
+// Actually because we drive forward we only need to whatch the x-axis
+//XXX
+tf::Quaternion *quat_zero = new tf::Quaternion(0.0,0.0,0.0,1);
+tf::Vector3 *way = new tf::Vector3(tfScalar(distance),
+                                    tfScalar(0.0),
+                                    tfScalar(0.0));
+
+// We actually save the start Transformation
+tf::Transform *startTransform = _Odometry_Transform;
+tf::Vector3 startPos 	      = startTransform->getOrigin();
+float goal 		      = distance;
+float driven_x 		      = 0.0;
+float driven_y  	      = 0.0;
+tf::Vector3 pos_now;
+
+while( goal <= distance ) {
+        geometry_msgs::Twist base;
+        base.angular.z = 0;
+        base.linear.x = direction*velocity;
+        _publisher.publish(base);
+	
+        // Now we calculate the driven way which is the difference between 
+ 	// the startTransform and the actual transform
+        pos_now 	    = _Odometry_Transform->getOrigin();
+	driven_x       	    = pos_now.getX() - startPos.getX();
+        driven_y            = pos_now.getY() - startPos.getY();
+        goal 	            = sqrt(driven_x*driven_x + driven_y*driven_y);
+	ROS_INFO("The driven distance is: %f",goal);
+
+	// We wait, to reduce the number of sended TwistMessages.
+        // If we would not the application crashes after some time.
+        ros::Duration(0.5).sleep(); 
+    }
+
+
+
+}
+
+
+
 
 
 /**
@@ -1092,7 +1174,7 @@ void docking(){
  */
 void startDocking(){
 
-	imove_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
+	move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 
 	searchTag();
 	ros::Duration(2.0).sleep();
@@ -1118,14 +1200,8 @@ int main(int argc, char **argv){
         spinner.start();
         Docking *d = new Docking();
        
-	//We have to drive to [2.867, 1.030, 0.010]
-//	d->move_to(2.867 , 1.030);
-
-	//d->drive_forward2(-1.00); 
-	//d->drive_forward(15.00);
-	//exit(0);
-		d->startDocking();	
-//	d->linear_approach();
+	d->startDocking();	
+	
 	ros::spin();
         return 0;
 }
