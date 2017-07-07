@@ -752,7 +752,7 @@ void drive_forward(float distance){
 
 ROS_INFO("Start to move forward ...");
 float velocity      = 0.15;
-float direction     = distance * getAmount(distance); 
+float direction     = distance / getAmount(distance); 
 // We actually save the start Transformation
 tf::Transform *startTransform = _Odometry_Transform;
 tf::Vector3 startPos 	      = startTransform->getOrigin();
@@ -1192,7 +1192,8 @@ int main(int argc, char **argv){
         spinner.start();
         Docking *d = new Docking();
        
-	d->startDocking();	
+	//d->startDocking();	
+	d->drive_forward(0.15);
 	ros::spin();
         return 0;
 }
