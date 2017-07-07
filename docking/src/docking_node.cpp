@@ -669,10 +669,10 @@ void drive_forward(float d){
 
 
 
-/* 
-* TODO: long distances backwards driving does still not work	
-*
+/*	
+* This function is deprecated
 */
+/**
 void drive_forward_ticks(float dist){
 
 // This is the maximum ticks number after this number 
@@ -730,7 +730,7 @@ while(drivenTicks < MAX_TICKS ){
 }
 
 }
-
+**/
 
 if(count == Num){// In this case the robot has to drive the rest
 while((direction*ticks < direction*end_ticks) ){
@@ -760,28 +760,22 @@ float goal 		      = distance;
 float driven_x 		      = 0.0;
 float driven_y  	      = 0.0;
 tf::Vector3 pos_now;
-
 while( direction*goal <= direction * distance ) {
         geometry_msgs::Twist base;
         base.angular.z = 0;
         base.linear.x = direction*velocity;
         _publisher.publish(base);
-	
         // Now we calculate the driven way which is the difference between 
  	// the startTransform and the actual transform
         pos_now 	    = _Odometry_Transform->getOrigin();
 	driven_x       	    = pos_now.getX() - startPos.getX();
         driven_y            = pos_now.getY() - startPos.getY();
         goal 	            = direction * sqrt(driven_x*driven_x + driven_y*driven_y);
-	ROS_INFO("The driven distance is: %f",goal);
-
+	//ROS_INFO("The driven distance is: %f",goal);
 	// We wait, to reduce the number of sended TwistMessages.
         // If we would not the application crashes after some time.
-        ros::Duration(0.5).sleep(); 
+        ros::Duration(0.3).sleep(); 
     }
-
-
-
 }
 
 
@@ -829,41 +823,6 @@ void move_to(float x, float y){
     ROS_INFO("Goal has been reached!");
 
 }
-
-/**
- * This function dirves to the given coordinates, which are relativly 
- * to the robots coordinate frame.
- * The robot dies not need to know its position
- * 
- */
-
-void move_rel_to(float x, float y){
-
-   //MoveBaseClient ac("move_base", true);
-
-    while(!_ac->waitForServer(ros::Duration(5.0))){
-        ROS_INFO("Waiting for the move_base action server to come up");
-    }
-    move_base_msgs::MoveBaseGoal goal;
-
-    goal.target_pose.header.frame_id = "base_link";
-    goal.target_pose.header.stamp = ros::Time::now();
-
-    goal.target_pose.pose.position.x = x;
-    goal.target_pose.pose.position.y = y;
-
-    goal.target_pose.pose.orientation.w = 1.0 ;
-
-    ROS_INFO("Sending goal");
-    _ac->sendGoal(goal);
-
-    _ac->waitForResult();
-    ROS_INFO("Goal has been reached!");
-
-}
-
-
-
 
 
 /**
@@ -1000,30 +959,6 @@ void  startReadingAngle(){
 
 void stopReadingAngle(){
 	_start_avg = false;
-}
-
-
-void move_base_positioning(){
-
-	ROS_INFO("Starting positioning with move base ...");
-	
-	startReadingAngle();
-                float a_pos_rad             = _avg_position_angle;
-                Vector2 pos;
-                pos.x = _avg_position_X;
-                pos.y = _avg_position_Y;
-        stopReadingAngle();
-
-
-	float y = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
-	
-
-	ROS_INFO("Calculated Way (y)  = %f",y);
-
-
-	move_rel_to(0,y);
-
-
 }
 
 
@@ -1192,8 +1127,8 @@ int main(int argc, char **argv){
         spinner.start();
         Docking *d = new Docking();
        
-	//d->startDocking();	
-	d->drive_forward(0.15);
+	d->startDocking();	
+	//d->drive_forward(0.15);
 	ros::spin();
         return 0;
 }
