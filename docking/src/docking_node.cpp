@@ -625,129 +625,6 @@ if(alpha_rad != 0.0){
 }
 }
 
-/**
- * This function drives the robot forward. The distance in [m] 
- * is given as a parameter, but the velocity should be fixed
- * 
- * TODO: Try the callibration with different velocitys.
- */
-/*
-void drive_forward(float d){
-
-    float velocity      = 0.15;
-    float distance	= getAmount(d);
-   
-    float direction     = (d < 0) ? -1.0 : 1.0;
-    
-    float time_to_wait  = distance / velocity;
-    //Calculating the ERROR
-    float  ERROR        = 8.92 * log(distance*100) - 26.515;
-    float  dt           = ERROR / (velocity*100);
-    if(dt > 0){
-        //USING NORMAL ERROR EQUATION
-        time_to_wait    = time_to_wait + dt;
-    }else{
-        //USING ERROR EQUATION FOR SMALL DISTANCES");
-        velocity        = 0.05;
-        time_to_wait    = distance / velocity;
-        ERROR           = 0.395 * (distance*100) - 0.079;
-        dt              = ERROR / (velocity*100);
-        time_to_wait    = time_to_wait + dt;
-    }
-    ros::Time startTime = ros::Time::now();
-    while(ros::Time::now() - startTime < ros::Duration(time_to_wait)){
-        geometry_msgs::Twist base;
-        base.angular.z = 0;
-        base.linear.x = direction*velocity;
-        _publisher.publish(base);
-        //We wait, to reduce the number of sended TwistMessages.
-        //If we would not the application crashes after some time.
-        ros::Duration(0.5).sleep(); 
-    }
-}
-*/
-
-
-
-/*	
-* This function is deprecated
-*/
-/**
-void drive_forward_ticks(float dist){
-
-// This is the maximum ticks number after this number 
-// the ticks count jumps back to zero
-float MAX_TICKS 	= 65535.0;
-float TICKS_PER_MM 	= 9.4; 
-
-// The direction should be 1 for forward and -1 for backwards
-float distance 	   = getAmount(dist);
-float direction    = dist / getAmount(distance);
-float start_ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-float dmm 	   = distance * 1000;
-// We know that the ticks_velocity sould be 11.7 ticks per mm.
-// But if we test this we actually have to use 9.4 ticks/mm
-float end_ticks    = start_ticks + direction *(TICKS_PER_MM * dmm);
-
-int Num 	   = (int)((TICKS_PER_MM * dmm) / MAX_TICKS);
-ROS_INFO("Num = %i",Num); 
-//If the end_ticks variable is bigger than 65535 we jump to zero to 0 
-end_ticks = (end_ticks > MAX_TICKS) ? fmod(end_ticks,MAX_TICKS) : end_ticks;
-//If the end_ticks variable is smaller than 0 the ticks jump to the MAX_TICKS
-end_ticks = (end_ticks < 0) ? end_ticks = MAX_TICKS - getAmount(end_ticks) : end_ticks;
-
-
-
-// Now we drive forward until the end_ticks have been reached
-float ticks 	 = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-int count        = 0;
-while(count <= Num){
-ROS_INFO("count = %i",count);
-
-if(count < Num){ // Now the robot has to drive the full 65535 ticks => 7m
-
-float start 	  = (float)_ticks_right;
-float restTicks   = MAX_TICKS - start; 
-ROS_INFO("restTicks = %f",restTicks);
-float drivenTicks = 0;
-int   N		  = 0;
-float ticks_old   = 0;
-while(drivenTicks < MAX_TICKS ){
-        geometry_msgs::Twist base;
-        
-	ticks  = _ticks_right; // No avg!!
-	
-	if ( ticks_old > ticks ) // This means we have reached the Max
-			N++;
-	float xx = (N == 0) ? ticks - start : ticks;
-	drivenTicks = ((float)N * restTicks) + xx;
-	//ROS_INFO(" --> %f",drivenTicks);
-        base.angular.z = 0;
-        base.linear.x = direction * 0.3;
-        _publisher.publish(base);
-        ros::Duration(0.5).sleep();
-	ticks_old = ticks;
-}
-
-}
-**/
-
-if(count == Num){// In this case the robot has to drive the rest
-while((direction*ticks < direction*end_ticks) ){
-	geometry_msgs::Twist base;
-	ticks  = 0.5 * ((float)_ticks_right + (float)_ticks_left);
-	base.angular.z = 0;
-        base.linear.x = direction * 0.3;
-        _publisher.publish(base);
-	ros::Duration(0.5).sleep();
-}
-}
-count++;
-}
-}
-
-
-
 void drive_forward(float distance){
 
 ROS_INFO("Start to move forward ...");
@@ -777,10 +654,6 @@ while( direction*goal <= direction * distance ) {
         ros::Duration(0.3).sleep(); 
     }
 }
-
-
-
-
 
 /**
  * This function drives an exact distance backwards.
@@ -854,7 +727,8 @@ void RememberPosition(){
 void searchTag(){
     ROS_INFO("searching Tag ...");
     _find_tag = true;// switch on the callback function findTag
-    while(!_TAG_AVAILABLE){
+   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
+   while(!_TAG_AVAILABLE){
         geometry_msgs::Twist base; 
         base.linear.x   = 0.0;
         base.angular.z  = 0.5;//5.0 * (M_PI/180);
@@ -931,7 +805,7 @@ void linear_approach(){
                 base.linear.x   = 0.035;
                 alpha_neu       = (180/M_PI)*(_avg_position_angle);
 		ros::Duration(0.5).sleep();
-                ROS_ERROR("alpha = %f",alpha_neu);
+                //ROS_ERROR("alpha = %f",alpha_neu);
 		_publisher.publish(base);
                 }
         }
@@ -975,7 +849,6 @@ void positioning(){
 		pos.y = _avg_position_Y;
 	stopReadingAngle();
 	//ROS_ERROR("Angle  = %f",(180/M_PI)*a_pos_rad);
-
 	if( getAmount(a_pos_rad)  < 5*(M_PI/180)){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
@@ -1025,7 +898,7 @@ void positioning(){
             stopReadingAngle();
             
             a_pos_deg = (180/M_PI) * a_pos_rad;
-            ROS_ERROR("A_POS_DEG = %f",a_pos_deg); 
+            //ROS_ERROR("A_POS_DEG = %f",a_pos_deg); 
             if(a_pos_deg < 20.0){
                 if(a_pos_deg < 10.0){
                     startReadingAngle();
@@ -1069,7 +942,7 @@ void docking(){
         if(pos.y > 0.44 ){
 		base.linear.x = 0.1;// We should drive very slow
 	}else{
-		base.linear.x = 0.02;
+		base.linear.x = 0.02;// If we are near enough we drive even slower
 	}
         }
 
@@ -1078,7 +951,9 @@ void docking(){
         // The Robot should drive backwards, when the bumper was triggered
 
         if(_docking_status){
-		exit(0); // On this point the docking was sucessfull
+		stopReadingAngle();
+		ros::Duration(1.0).sleep();
+		return;  //exit(0); // On this point the docking was sucessfull
 	}else{
         if(!_bumper_pressed){
             _publisher.publish(base);
@@ -1102,16 +977,12 @@ void docking(){
 void startDocking(){
 
 	move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
-
 	searchTag();
 	ros::Duration(2.0).sleep();
 	adjusting();
 	ros::Duration(2.0).sleep();	
 	positioning();
-//	move_base_positioning();
-	
 	ros::Duration(2.0).sleep();
-
 	docking();
 }	
 
@@ -1129,6 +1000,6 @@ int main(int argc, char **argv){
        
 	d->startDocking();	
 	//d->drive_forward(0.15);
-	ros::spin();
+	//ros::spin();
         return 0;
 }
