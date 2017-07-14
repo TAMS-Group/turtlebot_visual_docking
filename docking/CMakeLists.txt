@@ -7,6 +7,7 @@ add_definitions(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   actionlib
+  actionlib_msgs
   message_generation
   move_base_msgs
   roscpp
@@ -16,21 +17,32 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_msgs	
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES Docking.action
+)
+
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs std_msgs  # Or other packages containing msgs
+)
+
+
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES follow_tag
-  CATKIN_DEPENDS actionlib message_generation move_base_msgs roscpp std_msgs tf diagnostic_msgs
+  CATKIN_DEPENDS actionlib actionlib_msgs message_generation move_base_msgs roscpp std_msgs tf diagnostic_msgs
 #  DEPENDS system_lib
 )
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  include 
 )
 
-add_executable(stop_distance_node src/stop_distance_node.cpp)
-add_dependencies(stop_distance_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_executable(docking_node src/docking_node.cpp)
+add_executable(docking_server src/docking_server.cpp src/Docking.cpp src/Avg.cpp)
+add_executable(docking_node src/docking_node.cpp src/Docking.cpp src/Avg.cpp)
 add_dependencies(docking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(docking_node   ${catkin_LIBRARIES} )
-target_link_libraries(stop_distance_node   ${catkin_LIBRARIES} )
+target_link_libraries(docking_server ${catkin_LIBRARIES})
+target_link_libraries(docking_node ${catkin_LIBRARIES})
