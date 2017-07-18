@@ -283,7 +283,9 @@ void Docking::RegisterCallbackFunctions(){
         _sub7 = _n->subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
         _sub8 = _n->subscribe("/odom",1,&Docking::get_odom_pos,this);
 }
-
+/**
+* This constructor is for the use in a node, which uses the launch file: start_docking.launch
+*/
 Docking::Docking(){
 
         _n = new ros::NodeHandle();
@@ -294,7 +296,7 @@ Docking::Docking(){
         //Here we register all _subscribing callback functions
 	RegisterCallbackFunctions();
 
-        //The Parameters are read. 
+        //The Parameters are read from the launch file : start_docking.launch 
         std::string tag_id;
         if (_n->getParam("/dock/tag_id", tag_id)){
             _tag_name = "tag_" + tag_id;
@@ -428,10 +430,7 @@ void Docking::get_battery_status(const diagnostic_msgs::DiagnosticArray& msg){
 void Docking::get_charging_status(const kobuki_msgs::SensorState& msg){
 
 int status = msg.charger;
-
 //ROS_ERROR("status : %i",status);
-
-
 if(status == 6 ){
         _docking_status = true;
 }else{

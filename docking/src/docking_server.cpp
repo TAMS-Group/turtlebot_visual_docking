@@ -74,13 +74,14 @@ void executeCB(const docking::DockingGoalConstPtr &goal){
 
 // Read the tagid and compare it to the default tagid defined in /etc/environment 
 int msg_tag_id 	  = goal->tagid;
-
 ROS_INFO("tag_id = %i",msg_tag_id);
 std::string tag_id = "tag_" +  std::to_string(msg_tag_id);
+
 Docking *d = new Docking(&_nh,tag_id);
-//d->setParameters()
 
 d->startDocking();
+
+
 
 
 _result.text = "Arrived on docking station successfully.";
