@@ -273,54 +273,71 @@ void Docking::startFrontalDocking(){
 }
 
 
+void Docking::RegisterCallbackFunctions(){
+	_sub1 = _n->subscribe("mobile_base/sensors/imu_data",1,&Docking::actual_angle,this);
+        _sub2 = _n->subscribe("tag_detections",1,&Docking::get_avg_position_angle,this);
+        //_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
+        _sub4 = _n->subscribe("tag_detections",10,&Docking::findTag,this);
+        _sub5 = _n->subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
+        _sub6 = _n->subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
+        _sub7 = _n->subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
+        _sub8 = _n->subscribe("/odom",1,&Docking::get_odom_pos,this);
+}
+
 Docking::Docking(){
-        
-	ros::NodeHandle _n;
-        
-	_ac  = new MoveBaseClient("move_base", true);
 
-	listener    = new tf::TransformListener();
-    
-        _publisher = _n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
-	
+        _n = new ros::NodeHandle();
+        _ac  = new MoveBaseClient("move_base", true);
+        listener    = new tf::TransformListener();
+        _publisher = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
+
         //Here we register all _subscribing callback functions
-        _sub1 = _n.subscribe("mobile_base/sensors/imu_data",1,&Docking::actual_angle,this);	
-	_sub2 = _n.subscribe("tag_detections",1,&Docking::get_avg_position_angle,this);		
-	//_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
-	_sub4 = _n.subscribe("tag_detections",10,&Docking::findTag,this);
-	_sub5 = _n.subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
-        _sub6 = _n.subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
-
-	_sub7 = _n.subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
-	_sub8 = _n.subscribe("/odom",1,&Docking::get_odom_pos,this);
-	
+	RegisterCallbackFunctions();
 
         //The Parameters are read. 
-	std::string tag_id;
-	if (_n.getParam("/dock/tag_id", tag_id)){
+        std::string tag_id;
+        if (_n->getParam("/dock/tag_id", tag_id)){
             _tag_name = "tag_" + tag_id;
-  	     ROS_INFO(" tag_id = %s",_tag_name.c_str());
-	}else{
+             ROS_INFO(" tag_id = %s",_tag_name.c_str());
+        }else{
             ROS_ERROR("No Parameters found!");
-	    _tag_name = "tag_99";
+            _tag_name = "tag_99";
            // exit(0);
-	}
-
-	if(!_n.getParam("dock/pre_docking_pose_x",_TURTLEBOT_PRE_DOCKING_POSE_X)){
-	   ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_X");
-	   _TURTLEBOT_PRE_DOCKING_POSE_X = 2.97; 
-	   //exit(0);
-	}
-
-
-	if(!_n.getParam("dock/pre_docking_pose_y",_TURTLEBOT_PRE_DOCKING_POSE_Y)){
-           ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_Y");
-	   _TURTLEBOT_PRE_DOCKING_POSE_Y = -0.46;
-	   //exit(0);
         }
 
-	//Init();
-	//exit(0);
+        if(!_n->getParam("dock/pre_docking_pose_x",_TURTLEBOT_PRE_DOCKING_POSE_X)){
+           ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_X");
+           _TURTLEBOT_PRE_DOCKING_POSE_X = 2.97;
+           //exit(0);
+        }
+	if(!_n->getParam("dock/pre_docking_pose_y",_TURTLEBOT_PRE_DOCKING_POSE_Y)){
+           ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_Y");
+           _TURTLEBOT_PRE_DOCKING_POSE_Y = -0.46;
+           //exit(0);
+        }
+       
+        //Init();
+        //exit(0);
+        //We wait until tf comes up... 
+        ros::Duration(5.0).sleep();
+        //All other variables get initilized
+        Init();
+
+
+}
+
+
+Docking::Docking(ros::NodeHandle* nodeHandle,std::string tag_id){
+       
+	_n = nodeHandle;
+	_ac  = new MoveBaseClient("move_base", true);
+	listener    = new tf::TransformListener();   
+        _publisher = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
+	
+        //Here we register all _subscribing callback functions
+	RegisterCallbackFunctions();	
+        //The Parameters are read. 
+	_tag_name = tag_id;
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized

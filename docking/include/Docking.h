@@ -76,7 +76,7 @@ private:
 	ros::Subscriber         _sub7;
 	ros::Subscriber         _sub8;
 	double                  _angle;
-	ros::NodeHandle         _n;
+	ros::NodeHandle         *_n;
 	tf::StampedTransform    _transform_cam_base;
 	tf::StampedTransform    _transform_optical_cam;
 	int                     _ticks_right;
@@ -100,11 +100,10 @@ private:
 	float                   _avg_docking_angle;
 	std::string             _tag_name;
 	bool                    _bumper_pressed;
-	double                  _TURTLEBOT_PRE_DOCKING_POSE_X;
-	double                  _TURTLEBOT_PRE_DOCKING_POSE_Y;
 	Vector2                 _odom_pos;
 	tf::Transform           *_Odometry_Transform;
-	
+ 	float 			_TURTLEBOT_PRE_DOCKING_POSE_X;
+	float 			_TURTLEBOT_PRE_DOCKING_POSE_Y;	
         float getAmount(float in);
 	Vector2 normalize(Vector2 vec);
 	Vector2 spinVector(Vector2 vec,float angle);
@@ -117,10 +116,12 @@ private:
 	float get_yaw_angle();
 	Vector2 get_position();
 	void Init();
+	void RegisterCallbackFunctions();
 public:
 
 	void startFrontalDocking();
 	Docking();
+	Docking(ros::NodeHandle* nodeHandle,std::string tag_id);
 	void get_odom_pos(const nav_msgs::Odometry& msg);
 	void get_ticks(const kobuki_msgs::SensorState& msg);
 	void get_bumper_status(const kobuki_msgs::BumperEvent& msg);

@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 <!-- Turtle Roboter starten -->
-<include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot_navigation.launch"  />
+<!--<include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot_navigation.launch"  />-->
+<include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot.launch"  />
+
 <!-- size: 0.077-->
 
 <arg name="tag_param" default="[{id: $(env RPC_DOCK_ID),size: 0.100}]"/>
