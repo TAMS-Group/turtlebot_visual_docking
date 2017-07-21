@@ -31,8 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <actionlib/server/simple_action_server.h>
 #include <docking/DockingAction.h>
 #include <Docking.h>
-
-
+#include <thread>
+#include <future>
 
 class DockingServer {
 
@@ -50,8 +50,27 @@ protected:
 
  // Parameters from the start_docking.launch file
  std::string	_tag_id;
-
+ std::future<bool> _future_result;
 private:
+  
+   bool runDocking(){
+	ROS_INFO("runDocking()");
+	Docking *d = new Docking(&_nh,_tag_id);
+	return d->startDocking();
+	return true;
+   }
+
+
+
+  void runDockingThread(){
+	_future_result = std::async(std::launch::async,&DockingServer::runDocking,this);
+/*
+	_future_result = std::async(std::launch::async, [](){ 
+        	return true;  
+    	}); 
+*/
+}
+
 
 
 public: 
@@ -73,19 +92,35 @@ DockingServer(std::string name) :
 void executeCB(const docking::DockingGoalConstPtr &goal){
 
 // Read the tagid and compare it to the default tagid defined in /etc/environment 
-int msg_tag_id 	  = goal->tagid;
+int msg_tag_id  = goal->tagid;
 ROS_INFO("tag_id = %i",msg_tag_id);
-std::string tag_id = "tag_" +  std::to_string(msg_tag_id);
+_tag_id 	= "tag_" +  std::to_string(msg_tag_id);
 
-Docking *d = new Docking(&_nh,tag_id);
+// We start the docking algorithm in a different thread,
+// because we want to be able to listen to an cancel message
+// while the docking algortithm is running.
+// TODO: Docking algorithm sould produce feedback-messages
+runDockingThread();
 
-d->startDocking();
-
-
-
-
-_result.text = "Arrived on docking station successfully.";
-_as.setSucceeded(_result);
+// After running the docking algorithm we wait until the algorithm has 
+// finished or an cancel massage has been send.  
+std::future_status status;
+do{
+  status = _future_result.wait_for(std::chrono::seconds(2));
+     if (_as.isPreemptRequested() || !ros::ok()){
+        	ROS_INFO("Cancel...");
+        	// set the action state to preempted
+        	_as.setPreempted();
+        	// Now we have to kill the DockingThread
+		exit(0);
+    }
+}while(status != std::future_status::ready);
+bool success = _future_result.get();
+if(success){
+	ROS_INFO("reached");
+	_result.text = "Arrived on docking station successfully.";
+	_as.setSucceeded(_result);
+}
 }
 
 

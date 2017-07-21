@@ -142,7 +142,7 @@ public:
 	void stopReadingAngle();
 	void positioning();	
 	void docking();
-	void startDocking();	
+	bool startDocking();	
 
 };
 

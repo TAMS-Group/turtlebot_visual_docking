@@ -911,7 +911,7 @@ void Docking::docking(){
 /**
  * This function starts the docking.
  */
-void Docking::startDocking(){
+bool Docking::startDocking(){
 
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	searchTag();
@@ -921,4 +921,5 @@ void Docking::startDocking(){
 	positioning();
 	ros::Duration(2.0).sleep();
 	docking();
+ 	return true;
 }	
