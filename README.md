@@ -9,6 +9,10 @@ To bring up the turtlebot including the mobile base, the kobuki auto docking and
 
 ``` roslaunch docking justbringup.launch ```
 
+__Usage ActionServer__
+To start the ActionServer you can use
+``` rosrun docking docking_server```
+
 __Usage docking__
 
 To start the docking algorithm you can use:
