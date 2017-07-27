@@ -60,7 +60,7 @@ private:
         // we have to run this in an extrqa thread
 
         std::string tagid_str = std::to_string(_tag_id);
-        std::string cmd = "roslaunch docking start_tagdetection.launch tag_param:='[{id: "+tagid_str+",size: 0.100}]'";
+        std::string cmd = "roslaunch docking start_tagdetection.launch tag_param:='[{id: "+tagid_str+",size: 0.120}]'";
         system(cmd.c_str());
         ros::Duration(2.0).sleep();
 
