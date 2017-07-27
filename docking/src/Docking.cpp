@@ -837,7 +837,7 @@ void Docking::positioning(){
             float a_pos_rad = getAmount(_avg_position_angle);
             stopReadingAngle();
             
-            a_pos_deg = (180/M_PI) * a_pos_rad;
+            a_pos_deg = getAmount((180/M_PI) * a_pos_rad);
             //ROS_ERROR("A_POS_DEG = %f",a_pos_deg); 
             if(a_pos_deg < 20.0){
                 if(a_pos_deg < 10.0){
