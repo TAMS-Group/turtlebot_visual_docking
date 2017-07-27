@@ -49,27 +49,44 @@ protected:
 
 
  // Parameters from the start_docking.launch file
- std::string	_tag_id;
+ int	_tag_id;
  std::future<bool> _future_result;
+ std::future<void> _future_detection;
 private:
-  
+
+   void startApriltagDetectionNode(){
+
+	// At first we have to start the TagDetection Node for the Apriltag detection
+        // we have to run this in an extrqa thread
+
+        std::string tagid_str = std::to_string(_tag_id);
+        std::string cmd = "roslaunch docking start_tagdetection.launch tag_param:='[{id: "+tagid_str+",size: 0.100}]'";
+        system(cmd.c_str());
+        ros::Duration(2.0).sleep();
+
+
+   }  
+
+
+
    bool runDocking(){
-	ROS_INFO("runDocking()");
-	Docking *d = new Docking(&_nh,_tag_id);
+	ROS_INFO("runDocking()"); 
+	_feedback.text.clear();
+	Docking *d = new Docking(&_nh,_tag_id,&_feedback);
 	return d->startDocking();
-	return true;
    }
 
 
 
   void runDockingThread(){
+
+	_future_detection = std::async(std::launch::async,&DockingServer::startApriltagDetectionNode,this);
+
+	ros::Duration(3.0).sleep();
+	
 	_future_result = std::async(std::launch::async,&DockingServer::runDocking,this);
-/*
-	_future_result = std::async(std::launch::async, [](){ 
-        	return true;  
-    	}); 
-*/
-}
+
+   }
 
 
 
@@ -92,9 +109,7 @@ DockingServer(std::string name) :
 void executeCB(const docking::DockingGoalConstPtr &goal){
 
 // Read the tagid and compare it to the default tagid defined in /etc/environment 
-int msg_tag_id  = goal->tagid;
-ROS_INFO("tag_id = %i",msg_tag_id);
-_tag_id 	= "tag_" +  std::to_string(msg_tag_id);
+_tag_id  = goal->tagid;
 
 // We start the docking algorithm in a different thread,
 // because we want to be able to listen to an cancel message
@@ -106,7 +121,12 @@ runDockingThread();
 // finished or an cancel massage has been send.  
 std::future_status status;
 do{
-  status = _future_result.wait_for(std::chrono::seconds(2));
+ 
+	//int soa = ARRAY_SIZE(_feedback.text);
+	//ROS_INFO("%i",soa); 
+	//_as.publishFeedback(_feedback);
+
+	status = _future_result.wait_for(std::chrono::seconds(2));
      if (_as.isPreemptRequested() || !ros::ok()){
         	ROS_INFO("Cancel...");
         	// set the action state to preempted

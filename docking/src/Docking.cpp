@@ -329,17 +329,20 @@ Docking::Docking(){
 }
 
 
-Docking::Docking(ros::NodeHandle* nodeHandle,std::string tag_id){
-       
+Docking::Docking(ros::NodeHandle* nodeHandle,int tag_id,docking::DockingFeedback* feedback){
+     
+
 	_n = nodeHandle;
 	_ac  = new MoveBaseClient("move_base", true);
+	_feedback   = feedback;
 	listener    = new tf::TransformListener();   
-        _publisher = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
+        _publisher  = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
 	
         //Here we register all _subscribing callback functions
 	RegisterCallbackFunctions();	
         //The Parameters are read. 
-	_tag_name = tag_id;
+	std::string tagid_str = std::to_string(tag_id); 
+	_tag_name = "tag_"+tagid_str;
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized
@@ -912,6 +915,7 @@ void Docking::docking(){
  * This function starts the docking.
  */
 bool Docking::startDocking(){
+	_feedback->text.push_back("TDHUDGAS!");
 
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	searchTag();
