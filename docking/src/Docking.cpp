@@ -696,6 +696,27 @@ void Docking::adjusting(){
 }
 
 /**
+* The robot turns until the docking asngle is smaller than epsilon.
+*/
+void Docking::watchTag(){
+   _start_avg = true; 
+   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
+   float epsilon = 3.0 ;
+   while(getAmount((180/M_PI)*_avg_docking_angle) > epsilon){
+        geometry_msgs::Twist base;
+        base.linear.x   = 0.0;
+        base.angular.z  = 0.2;//5.0 * (M_PI/180);
+        _publisher.publish(base);
+        ros::Duration(0.5).sleep();
+	ROS_INFO("Angle = %f",(180/M_PI)*_avg_docking_angle);
+    }
+   _start_avg = false;
+}
+
+
+
+
+/**
  * This function does the linear Approach described in section 6.2
  */
 void Docking::linear_approach(){
@@ -927,6 +948,7 @@ bool Docking::startDocking(){
 	}
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	searchTag();
+	watchTag();
 	ros::Duration(2.0).sleep();	
 	positioning();
 	
