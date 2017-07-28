@@ -100,6 +100,7 @@ private:
 	float                   _avg_position_angle;
 	float                   _avg_docking_angle;
 	std::string             _tag_name;
+	int 			_tag_id;
 	bool                    _bumper_pressed;
 	Vector2                 _odom_pos;
 	tf::Transform           *_Odometry_Transform;

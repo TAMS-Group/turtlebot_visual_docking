@@ -59,9 +59,9 @@ private:
 	// At first we have to start the TagDetection Node for the Apriltag detection
         // we have to run this in an extrqa thread
 
-        std::string tagid_str = std::to_string(_tag_id);
-        std::string cmd = "roslaunch docking start_tagdetection.launch tag_param:='[{id: "+tagid_str+",size: 0.120}]'";
-        system(cmd.c_str());
+        //std::string tagid_str = std::to_string(_tag_id);
+        //std::string cmd = "roslaunch docking start_tagdetection.launch tag_param:='[{id: "+tagid_str+",size: 0.120}]'";
+        //system(cmd.c_str());
         ros::Duration(2.0).sleep();
 
 
@@ -80,9 +80,8 @@ private:
 
   void runDockingThread(){
 
-	_future_detection = std::async(std::launch::async,&DockingServer::startApriltagDetectionNode,this);
-
-	ros::Duration(3.0).sleep();
+	//_future_detection = std::async(std::launch::async,&DockingServer::startApriltagDetectionNode,this);
+	//ros::Duration(3.0).sleep();
 	
 	_future_result = std::async(std::launch::async,&DockingServer::runDocking,this);
 

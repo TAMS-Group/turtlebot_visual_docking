@@ -223,8 +223,9 @@ Docking::Vector2 Docking::get_position(){
     tf::StampedTransform transform;
     try{
         ros::Time begin = ros::Time::now();
+	ros::Time zero  = ros::Time(0);
         listener->waitForTransform(_tag_name,"base_link",begin,ros::Duration(10.0));
-        listener->lookupTransform(_tag_name, "base_link",begin, transform);
+        listener->lookupTransform(_tag_name, "base_link",zero, transform);
     }catch (tf::TransformException ex){
         ROS_ERROR("get_position()  ::=> %s",ex.what());
         ros::Duration(1.0).sleep();
@@ -294,19 +295,21 @@ Docking::Docking(){
         _publisher = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
 
         //Here we register all _subscribing callback functions
+	ros::Duration(6.0).sleep();//wait for the ApriltagDetectionNode
 	RegisterCallbackFunctions();
 
         //The Parameters are read from the launch file : start_docking.launch 
         std::string tag_id;
         if (_n->getParam("/dock/tag_id", tag_id)){
             _tag_name = "tag_" + tag_id;
+	    _tag_id = atoi(tag_id.c_str());
              ROS_INFO(" tag_id = %s",_tag_name.c_str());
         }else{
             ROS_ERROR("No Parameters found!");
             _tag_name = "tag_99";
+	    _tag_id = 99;
            // exit(0);
         }
-
         if(!_n->getParam("dock/pre_docking_pose_x",_TURTLEBOT_PRE_DOCKING_POSE_X)){
            ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_X");
            _TURTLEBOT_PRE_DOCKING_POSE_X = 2.97;
@@ -339,10 +342,12 @@ Docking::Docking(ros::NodeHandle* nodeHandle,int tag_id,docking::DockingFeedback
         _publisher  = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
 	
         //Here we register all _subscribing callback functions
+	ros::Duration(3.0).sleep();//wait for the ApriltagDetectionNode
 	RegisterCallbackFunctions();	
         //The Parameters are read. 
 	std::string tagid_str = std::to_string(tag_id); 
 	_tag_name = "tag_"+tagid_str;
+	_tag_id   = tag_id; 
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized
@@ -452,8 +457,9 @@ if(_start_avg){
 	apriltags_ros::AprilTagDetection detection;
         int size = msg.detections.size();
 //	ROS_ERROR("SIZE=%i",size);
-	if(size == 1){
-            apriltags_ros::AprilTagDetection detect = msg.detections[0];
+	for(int i = 0; i < size ; i++){
+	if(msg.detections[i].id == _tag_id){
+            apriltags_ros::AprilTagDetection detect = msg.detections[i];
             int id                                  = detect.id;
             double siz                              = detect.size;
             geometry_msgs::PoseStamped pose         = detect.pose;
@@ -503,6 +509,7 @@ if(_start_avg){
                     }
 		_g_mutex.unlock();
             }
+	}
 	}
 }
 }
@@ -915,8 +922,9 @@ void Docking::docking(){
  * This function starts the docking.
  */
 bool Docking::startDocking(){
-	_feedback->text.push_back("TDHUDGAS!");
-
+	if(_feedback != NULL){
+		_feedback->text.push_back("TDHUDGAS!");
+	}
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	searchTag();
 	ros::Duration(2.0).sleep();
