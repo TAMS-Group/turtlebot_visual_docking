@@ -927,10 +927,10 @@ bool Docking::startDocking(){
 	}
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	searchTag();
-	ros::Duration(2.0).sleep();
-	adjusting();
 	ros::Duration(2.0).sleep();	
 	positioning();
+	
+	adjusting();
 	ros::Duration(2.0).sleep();
 	docking();
  	return true;
