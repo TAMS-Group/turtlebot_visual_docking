@@ -580,8 +580,8 @@ void Docking::drive_forward(float distance){
 
 ROS_INFO("Start to move forward ...");
 
-//0.9 is a magic value to drive exact distances
-distance	    = 0.90 * distance;
+// -0.1 is a magic value to drive exact distances
+distance	    = distance - 0.1;
 
 float velocity      = 0.15;
 float direction     = distance / getAmount(distance); 
