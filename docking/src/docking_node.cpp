@@ -9,7 +9,7 @@ int main(int argc, char **argv){
         spinner.start();
         Docking *d = new Docking();
        
-	d->startDocking();	
+	d->startDocking();
 	//ros::spin();
         return 0;
 }

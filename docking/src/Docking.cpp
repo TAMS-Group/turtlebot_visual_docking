@@ -490,13 +490,13 @@ if(_start_avg){
 		return;
             }else{
                 float alpha_dock   = atan(yy/xx);
-                float alpha_pos    = alpha_dock - (M_PI/2 + yaw);
+                float alpha_pos    = (alpha_dock - (M_PI/2 + yaw));
 		_g_mutex.lock();
                     if(std::isfinite(alpha_pos)){
                         _avg_pos->new_value(alpha_pos);
                         _avg_dock->new_value(alpha_dock);
-                        _avg_X->new_value(x);
-			_avg_Y->new_value(y);
+                        _avg_X->new_value(z);
+			_avg_Y->new_value(x);
 			float avg_pos_angle  	= _avg_pos->avg();
                         float avg_dock_angle 	= _avg_dock->avg();
 			float avg_position_X 	= _avg_X->avg();
@@ -796,7 +796,7 @@ void  Docking::startReadingAngle(){
         _avg_pos->flush_array();
         _avg_dock->flush_array();
         _start_avg = true;
-        ros::Duration(4.0).sleep();
+        ros::Duration(5.0).sleep();
 }
 
 void Docking::stopReadingAngle(){
@@ -812,12 +812,17 @@ void Docking::positioning(){
 	RememberPosition();
 	startReadingAngle();
 		float a_pos_rad             = _avg_position_angle;
+		float a_pos_deg		    = (180/M_PI)*_avg_position_angle;
 		Docking::Vector2 pos;
 		pos.x = _avg_position_X;
 		pos.y = _avg_position_Y;
 	stopReadingAngle();
-	//ROS_ERROR("Angle  = %f",(180/M_PI)*a_pos_rad);
-	if( getAmount(a_pos_rad)  < 5*(M_PI/180)){
+	ROS_ERROR("Angle read with :  %f °",(180/M_PI)*a_pos_rad);
+	ROS_ERROR("Angle read with : %f rad",a_pos_rad);
+	ROS_ERROR("Pos_X read with : %f",_avg_position_X);
+	ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
+
+	if( getAmount(a_pos_deg)  < 5*(M_PI/180)){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
 	    _start_avg = false;
@@ -829,19 +834,18 @@ void Docking::positioning(){
             docking(); 
         }else{
             float alpha_yaw 	= get_yaw_angle();
-            float a_pos_deg     = (180/M_PI) * a_pos_rad;
             float beta_rad      = 0.0;
             float way           = 0.0;
             if(a_pos_deg < 0.0){// Now the robot has to turn right
                     ROS_INFO("Turning right!");
                     beta_rad = ((M_PI/2) + alpha_yaw);
-                    way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+                    way = 1.10 * sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle((-1)*beta_rad);
             }else{
                 if(a_pos_deg > 0.0){// Now the robot has to turn left
                     ROS_INFO("Turning left");
                     beta_rad  = (M_PI/2) - alpha_yaw;
-                    way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+                    way = 1.10 * sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle(beta_rad);
                 }
             }
