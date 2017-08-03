@@ -252,10 +252,10 @@ void Docking::Init(){
     _try_more 		= true;
     _start_avg		= false;
     _bumper_pressed     = false;
-    _avg_pos 		= new Avg(40);
+    _avg_pos 		= new Avg(60);
     _avg_dock		= new Avg(10);
-    _avg_X 		= new Avg(40);
-    _avg_Y		= new Avg(40);
+    _avg_X 		= new Avg(60);
+    _avg_Y		= new Avg(60);
     _odom_pos.x 	= 0.0;
     _odom_pos.y		= 0.0;
 }
@@ -522,9 +522,13 @@ if(_start_avg){
 void Docking::findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 	if(_find_tag){
 		apriltags_ros::AprilTagDetection detection;
-		int size = msg.detections.size() ;
-		_TAG_AVAILABLE = (size == 1);
-		//ROS_ERROR("Size = %i",size);
+		int size = msg.detections.size() ;	
+		for(int i = 0; i < size ; i++){
+			int tag_id = msg.detections[i].id;
+			if(_tag_id == tag_id){
+				_TAG_AVAILABLE = true;
+			}
+		}
 	}
 }
 
@@ -604,84 +608,84 @@ while( direction*goal <= direction * distance ) {
 
 /**
  * This function drives an exact distance backwards.
- * The parameter distance is given in meter.
- */
-void Docking::drive_backward(float distance){
-    drive_forward(-distance);
-}
+	 * The parameter distance is given in meter.
+	 */
+	void Docking::drive_backward(float distance){
+	    drive_forward(-distance);
+	}
 
 
-/**
- * This function dirves to the given coordinates.
- * This function only works if the robot does know its position.
- * 
- */ 
+	/**
+	 * This function dirves to the given coordinates.
+	 * This function only works if the robot does know its position.
+	 * 
+	 */ 
 
-void Docking::move_to(float x, float y){
+	void Docking::move_to(float x, float y){
 
-    //MoveBaseClient ac("move_base", true);
-    
-    while(!_ac->waitForServer(ros::Duration(5.0))){
-        ROS_INFO("Waiting for the move_base action server to come up");
-    }
-    move_base_msgs::MoveBaseGoal goal;
-    
-    // Actually we use the topic map because we need a fixpoint, 
-    // which does not change over time
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = ros::Time::now();
+	    //MoveBaseClient ac("move_base", true);
+	    
+	    while(!_ac->waitForServer(ros::Duration(5.0))){
+		ROS_INFO("Waiting for the move_base action server to come up");
+	    }
+	    move_base_msgs::MoveBaseGoal goal;
+	    
+	    // Actually we use the topic map because we need a fixpoint, 
+	    // which does not change over time
+	    goal.target_pose.header.frame_id = "map";
+	    goal.target_pose.header.stamp = ros::Time::now();
 
-    goal.target_pose.pose.position.x = x;
-    goal.target_pose.pose.position.y = y;
+	    goal.target_pose.pose.position.x = x;
+	    goal.target_pose.pose.position.y = y;
 
-    goal.target_pose.pose.orientation.w = 1.0 ;
+	    goal.target_pose.pose.orientation.w = 1.0 ;
 
-    ROS_INFO("Sending goal");
-    _ac->sendGoal(goal);
+	    ROS_INFO("Sending goal");
+	    _ac->sendGoal(goal);
 
-    _ac->waitForResult();
-    ROS_INFO("Goal has been reached!");
+	    _ac->waitForResult();
+	    ROS_INFO("Goal has been reached!");
 
-}
-
-
-/**
- * This function should memorize the actuall position. 
- * The position is saved in the variables 
- * _start_pos_x, _start_pos_y, and _start_pos_z.
- */
-void Docking::RememberPosition(){
-// Lese Position aus dem base_link
-    tf::StampedTransform transform;
-    try{
-        ros::Time begin = ros::Time::now();
-        listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(5.0));
-        listener->lookupTransform("base_link", _tag_name,ros::Time(0), transform);
-    }catch (tf::TransformException ex){
-        ROS_ERROR("%s",ex.what());
-        ros::Duration(1.0).sleep();
-    }
-    _start_pos_x = transform.getOrigin().x();
-    _start_pos_y = transform.getOrigin().y();
-    _start_pos_z = transform.getOrigin().z();
-}
+	}
 
 
-/**
- * This function turns the robot counter clock-wise until the 
- * Apriltag can be seen by the camera.
- */
-void Docking::searchTag(){
-    ROS_INFO("searching Tag ...");
-    _find_tag = true;// switch on the callback function findTag
-   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
-   while(!_TAG_AVAILABLE){
-        geometry_msgs::Twist base; 
-        base.linear.x   = 0.0;
-        base.angular.z  = 0.5;//5.0 * (M_PI/180);
-        _publisher.publish(base);
-        ros::Duration(0.5).sleep();
-    }
+	/**
+	 * This function should memorize the actuall position. 
+	 * The position is saved in the variables 
+	 * _start_pos_x, _start_pos_y, and _start_pos_z.
+	 */
+	void Docking::RememberPosition(){
+	// Lese Position aus dem base_link
+	    tf::StampedTransform transform;
+	    try{
+		ros::Time begin = ros::Time::now();
+		listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(5.0));
+		listener->lookupTransform("base_link", _tag_name,ros::Time(0), transform);
+	    }catch (tf::TransformException ex){
+		ROS_ERROR("%s",ex.what());
+		ros::Duration(1.0).sleep();
+	    }
+	    _start_pos_x = transform.getOrigin().x();
+	    _start_pos_y = transform.getOrigin().y();
+	    _start_pos_z = transform.getOrigin().z();
+	}
+
+
+	/**
+	 * This function turns the robot counter clock-wise until the 
+	 * Apriltag can be seen by the camera.
+	 */
+	void Docking::searchTag(){
+	    ROS_INFO("searching Tag ...");
+	    _find_tag = true;// switch on the callback function findTag
+	   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
+	   while(!_TAG_AVAILABLE){
+		geometry_msgs::Twist base; 
+		base.linear.x   = 0.0;
+        	base.angular.z  = 0.8;//5.0 * (M_PI/180);
+        	_publisher.publish(base);
+       	   ros::Duration(0.5).sleep();
+           }
     _find_tag = false; // switch off the callback function findTag
 }
 
@@ -796,7 +800,7 @@ void  Docking::startReadingAngle(){
         _avg_pos->flush_array();
         _avg_dock->flush_array();
         _start_avg = true;
-        ros::Duration(5.0).sleep();
+        ros::Duration(6.0).sleep();
 }
 
 void Docking::stopReadingAngle(){
@@ -817,12 +821,12 @@ void Docking::positioning(){
 		pos.x = _avg_position_X;
 		pos.y = _avg_position_Y;
 	stopReadingAngle();
-	ROS_ERROR("Angle read with :  %f °",(180/M_PI)*a_pos_rad);
+	ROS_ERROR("Angle read with :  %f deg",a_pos_deg);
 	ROS_ERROR("Angle read with : %f rad",a_pos_rad);
 	ROS_ERROR("Pos_X read with : %f",_avg_position_X);
 	ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
 
-	if( getAmount(a_pos_deg)  < 5*(M_PI/180)){
+	if( getAmount(a_pos_deg)  < 6.0){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
 	    _start_avg = false;
@@ -839,13 +843,13 @@ void Docking::positioning(){
             if(a_pos_deg < 0.0){// Now the robot has to turn right
                     ROS_INFO("Turning right!");
                     beta_rad = ((M_PI/2) + alpha_yaw);
-                    way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+                    way = 0.95*sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle((-1)*beta_rad);
             }else{
                 if(a_pos_deg > 0.0){// Now the robot has to turn left
                     ROS_INFO("Turning left");
                     beta_rad  = (M_PI/2) - alpha_yaw;
-                    way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+                    way = 0.95*sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle(beta_rad);
                 }
             }
