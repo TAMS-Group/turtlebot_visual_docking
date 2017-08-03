@@ -579,6 +579,10 @@ if(alpha_rad != 0.0){
 void Docking::drive_forward(float distance){
 
 ROS_INFO("Start to move forward ...");
+
+//0.9 is a magic value to drive exact distances
+distance	    = 0.90 * distance;
+
 float velocity      = 0.15;
 float direction     = distance / getAmount(distance); 
 // We actually save the start Transformation
@@ -843,13 +847,13 @@ void Docking::positioning(){
             if(a_pos_deg < 0.0){// Now the robot has to turn right
                     ROS_INFO("Turning right!");
                     beta_rad = ((M_PI/2) + alpha_yaw);
-                    way = 0.95*sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+                    way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle((-1)*beta_rad);
             }else{
                 if(a_pos_deg > 0.0){// Now the robot has to turn left
                     ROS_INFO("Turning left");
                     beta_rad  = (M_PI/2) - alpha_yaw;
-                    way = 0.95*sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
+                    way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle(beta_rad);
                 }
             }

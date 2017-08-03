@@ -10,6 +10,7 @@ int main(int argc, char **argv){
         Docking *d = new Docking();
        
 	d->startDocking();
+	//d->drive_forward(1.0);
 	//ros::spin();
         return 0;
 }
