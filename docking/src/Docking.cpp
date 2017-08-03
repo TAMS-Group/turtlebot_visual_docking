@@ -324,7 +324,7 @@ Docking::Docking(){
         //Init();
         //exit(0);
         //We wait until tf comes up... 
-        ros::Duration(5.0).sleep();
+        ros::Duration(3.0).sleep();
         //All other variables get initilized
         Init();
 
@@ -608,6 +608,10 @@ while( direction*goal <= direction * distance ) {
         // If we would not the application crashes after some time.
         ros::Duration(0.3).sleep(); 
     }
+/*
+geometry_msgs::Twist zero;
+_publisher.publish(zero);
+*/
 }
 
 /**
@@ -885,7 +889,12 @@ void Docking::positioning(){
                     ros::Duration(1.0).sleep();
                     docking();
                 }else{
-                    linear_approach();
+                    //At this moment the linear approach does makes things worse
+		    // thus we simply try to do repositioning
+		    //linear_approach();
+		   ROS_ERROR("RESTART_POSITIONING");
+                   positioning();
+		
                 }
             }else{
                 ROS_ERROR("RESTART_POSITIONING");
