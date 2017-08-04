@@ -138,7 +138,6 @@ public:
 	void drive_forward(float distance);
 	void drive_backward(float distance);
 	void move_to(float x, float y);
-	void RememberPosition();
 	void watchTag();
 	void searchTag();
 	void adjusting();
