@@ -725,7 +725,7 @@ void Docking::watchTag(){
         base.angular.z  = 0.2;//5.0 * (M_PI/180);
         _publisher.publish(base);
         ros::Duration(0.5).sleep();
-	ROS_INFO("Angle = %f",(180/M_PI)*_avg_docking_angle);
+	//ROS_INFO("Angle = %f",(180/M_PI)*_avg_docking_angle);
     }
    _start_avg = false;
 }
@@ -823,10 +823,10 @@ void Docking::positioning(){
 		pos.x = _avg_position_X;
 		pos.y = _avg_position_Y;
 	stopReadingAngle();
-	ROS_ERROR("Angle read with :  %f deg",a_pos_deg);
-	ROS_ERROR("Angle read with : %f rad",a_pos_rad);
-	ROS_ERROR("Pos_X read with : %f",_avg_position_X);
-	ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
+	//ROS_ERROR("Angle read with :  %f deg",a_pos_deg);
+	//ROS_ERROR("Angle read with : %f rad",a_pos_rad);
+	//ROS_ERROR("Pos_X read with : %f",_avg_position_X);
+	//ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
 
 	if( getAmount(a_pos_deg)  < 6.0){
 	    ROS_INFO("Start frontal docking without positioning...");
@@ -954,7 +954,7 @@ void Docking::docking(){
  */
 bool Docking::startDocking(){
 	if(_feedback != NULL){
-		_feedback->text.push_back("TDHUDGAS!");
+		_feedback->text.push_back("Start Docking ...");
 	}
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	searchTag();
