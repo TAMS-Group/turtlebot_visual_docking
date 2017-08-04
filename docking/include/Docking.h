@@ -140,7 +140,7 @@ public:
 	void watchTag();
 	void searchTag();
 	void adjusting();
-	void linear_approach();
+	void linearApproach();
 	void startReadingAngle();
 	void stopReadingAngle();
 	void positioning();	

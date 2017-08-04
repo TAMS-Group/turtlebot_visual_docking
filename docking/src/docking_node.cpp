@@ -9,6 +9,7 @@ int main(int argc, char **argv){
         spinner.start();
         Docking *d = new Docking();
        
+	//d->linearApproach();
 	d->startDocking();
 	//d->drive_forward(0.5);
 	//ros::spin();

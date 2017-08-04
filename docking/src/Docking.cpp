@@ -88,7 +88,7 @@ return v_new;
 float Docking::epsi(float _tx){
 
 float tx    = 100*_tx;
-float tb    = 7.7; //Tagbreite in cm
+float tb    = 12.5; //Tagbreite in cm
 
 float p     = 0.25;
 float theta = 50 * (M_PI/180);
@@ -579,9 +579,8 @@ if(alpha_rad != 0.0){
 void Docking::drive_forward(float distance){
 
 ROS_INFO("Start to move forward ...");
-
-// -0.1 is a magic value to drive exact distances
-distance	    = distance - 0.1;
+// -0.07 is a magic offset to drive exact distances
+distance	    = distance - 0.07;
 
 float velocity      = 0.15;
 float direction     = distance / getAmount(distance); 
@@ -608,28 +607,28 @@ while( direction*goal <= direction * distance ) {
         // If we would not the application crashes after some time.
         ros::Duration(0.3).sleep(); 
     }
-/*
+
 geometry_msgs::Twist zero;
 _publisher.publish(zero);
-*/
+
 }
 
 /**
  * This function drives an exact distance backwards.
-	 * The parameter distance is given in meter.
-	 */
-	void Docking::drive_backward(float distance){
-	    drive_forward(-distance);
-	}
+ * The parameter distance is given in meter.
+ */
+void Docking::drive_backward(float distance){
+    drive_forward(-distance);
+}
 
 
-	/**
-	 * This function dirves to the given coordinates.
-	 * This function only works if the robot does know its position.
-	 * 
-	 */ 
+/**
+ * This function dirves to the given coordinates.
+ * This function only works if the robot does know its position.
+ * 
+ */ 
 
-	void Docking::move_to(float x, float y){
+void Docking::move_to(float x, float y){
 
 	    //MoveBaseClient ac("move_base", true);
 	    
@@ -654,15 +653,15 @@ _publisher.publish(zero);
 	    _ac->waitForResult();
 	    ROS_INFO("Goal has been reached!");
 
-	}
+}
 
 
-	/**
-	 * This function should memorize the actuall position. 
-	 * The position is saved in the variables 
-	 * _start_pos_x, _start_pos_y, and _start_pos_z.
-	 */
-	void Docking::RememberPosition(){
+/**
+ * This function should memorize the actuall position. 
+ * The position is saved in the variables 
+ * _start_pos_x, _start_pos_y, and _start_pos_z.
+ */
+void Docking::RememberPosition(){
 	// Lese Position aus dem base_link
 	    tf::StampedTransform transform;
 	    try{
@@ -703,7 +702,13 @@ _publisher.publish(zero);
  */
 void Docking::adjusting(){
 	ROS_INFO("Adjusting position ...");
+	
+
+	startReadingAngle();
+
 	float yaw = get_yaw_angle();
+
+	stopReadingAngle();
 	move_angle(-yaw);
 }
 
@@ -731,38 +736,29 @@ void Docking::watchTag(){
 /**
  * This function does the linear Approach described in section 6.2
  */
-void Docking::linear_approach(){
+void Docking::linearApproach(){
     adjusting();
-    ros::Duration(5.0).sleep();
     ROS_INFO("Begin linear approach");
-    Docking::Vector2 pos 		= get_position();
-    Docking::Vector2 t;
-    t.x = 1.0;
-    t.y = 0.0;
+    Docking::Vector2 pos;
+
     startReadingAngle();
     float alpha         = _avg_position_angle;
+    pos.x 		= _avg_position_X;
+    pos.y 		= _avg_position_Y;  
     stopReadingAngle();
-    float alpha_deg     = (180/M_PI)*alpha;
-    float epsilon       = epsi(pos.x) - (M_PI/180)*2;
-    Docking::Vector2 vec2 	= spinVector(t,epsilon);
-    Docking::Vector2 vec_n	= normalize(vec2);
-    //Bedingung die zu prüfen ist
-    float d = ((0.25 - 1)/-0.25) * tan((M_PI/2) - epsilon) * pos.x;
 
-    ROS_INFO("DISTANCE = %f",d);
-    ROS_INFO("DIST_POS = %f",pos.y);
-    ROS_INFO("ANGLE= %f",(180/M_PI)*alpha);
-    ROS_INFO("EPSILON= %f",epsilon*(180/M_PI));
-    if (d > pos.y){
-        ROS_INFO("Distance to short --> Repositioning ");
-	positioning();
-        return;
-    }else{
-        startReadingAngle();
-        float e = getAmount(epsilon);
-        if(alpha < 0.0 ) { //TURN RIGHT
-            float deg = (180/M_PI)*epsilon;
-            ROS_INFO("Turning right with alpha2= %f",deg);
+    float alpha_deg     = (180/M_PI)*alpha;
+    float epsilon_rad   = epsi(pos.x);
+    float epsilon_deg   = (180/M_PI)*epsilon_rad;
+    float e 		= getAmount(epsilon_rad);
+
+    ROS_INFO("POS_ANGLE= %f",alpha_deg);
+    ROS_INFO("EPSILON= %f",epsilon_deg);	    
+    
+     startReadingAngle();
+  
+     if(alpha < 0.0 ) { //TURN RIGHT
+            ROS_INFO("Turning right with epsilon= %f deg",epsilon_deg);
             move_angle(-e);	
             float alpha_neu = -360;
             while(alpha_neu < 0.0){
@@ -775,8 +771,7 @@ void Docking::linear_approach(){
             }
         }
         if(alpha > 0.0){ //TURN LEFT
-            float deg = (180/M_PI) * epsilon;
-            ROS_INFO("Turning left with alpha2= %f",deg);
+            ROS_INFO("Turning left with epsilon= %f deg",epsilon_deg);
             move_angle(e);
             float alpha_neu = 360;
             while(alpha_neu > 0.0){
@@ -791,16 +786,15 @@ void Docking::linear_approach(){
         }
         ROS_INFO("STOP");
         stopReadingAngle();
-        if(alpha < 0.0){//TURN LEFT AGAIN
+        if(alpha_deg < 0.0){//TURN LEFT AGAIN
                 move_angle(e);
         }
-        if(alpha > 0.0){ //TURN RIGHT AGAIN
+        if(alpha_deg > 0.0){ //TURN RIGHT AGAIN
                 move_angle(-e);
         }
         this->adjusting();
-        startReadingAngle();
-        docking();
-    }
+        ROS_INFO("Start Docking");
+	docking();
 }
 
 void  Docking::startReadingAngle(){
@@ -888,13 +882,8 @@ void Docking::positioning(){
                     startReadingAngle();
                     ros::Duration(1.0).sleep();
                     docking();
-                }else{
-                    //At this moment the linear approach does makes things worse
-		    // thus we simply try to do repositioning
-		    //linear_approach();
-		   ROS_ERROR("RESTART_POSITIONING");
-                   positioning();
-		
+                }else{   
+		    linearApproach();
                 }
             }else{
                 ROS_ERROR("RESTART_POSITIONING");
