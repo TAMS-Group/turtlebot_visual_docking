@@ -94,11 +94,13 @@ private:
 	Avg                     *_avg_dock;
 	Avg                     *_avg_X;
 	Avg                     *_avg_Y;
+	Avg			*_avg_yaw;
 	std::mutex              _g_mutex;
 	float                   _avg_position_X;
 	float                   _avg_position_Y;
 	float                   _avg_position_angle;
 	float                   _avg_docking_angle;
+	float 			_avg_yaw_angle;
 	std::string             _tag_name;
 	int 			_tag_id;
 	bool                    _bumper_pressed;

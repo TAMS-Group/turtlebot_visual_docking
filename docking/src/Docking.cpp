@@ -256,6 +256,7 @@ void Docking::Init(){
     _avg_dock		= new Avg(10);
     _avg_X 		= new Avg(60);
     _avg_Y		= new Avg(60);
+    _avg_yaw		= new Avg(30);
     _odom_pos.x 	= 0.0;
     _odom_pos.y		= 0.0;
 }
@@ -309,16 +310,6 @@ Docking::Docking(){
             _tag_name = "tag_99";
 	    _tag_id = 99;
            // exit(0);
-        }
-        if(!_n->getParam("dock/pre_docking_pose_x",_TURTLEBOT_PRE_DOCKING_POSE_X)){
-           ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_X");
-           _TURTLEBOT_PRE_DOCKING_POSE_X = 2.97;
-           //exit(0);
-        }
-	if(!_n->getParam("dock/pre_docking_pose_y",_TURTLEBOT_PRE_DOCKING_POSE_Y)){
-           ROS_ERROR("No Parameter for the PRE_DOCKING_POSE_Y");
-           _TURTLEBOT_PRE_DOCKING_POSE_Y = -0.46;
-           //exit(0);
         }
        
         //Init();
@@ -484,6 +475,7 @@ if(_start_avg){
             float yy	= base_tag.getOrigin().y();
             float zz	= base_tag.getOrigin().z();
             float yaw   = tf::getYaw(base_tag.getRotation());
+	    //float yawyaw= tf::getYaw(p.orientation);
             if( getAmount(xx) <  0.00001){
                 ROS_ERROR("Division through zero is not allowed! xx=%f, yy= %f",xx,yy);
                 //exit(0);
@@ -497,14 +489,17 @@ if(_start_avg){
                         _avg_dock->new_value(alpha_dock);
                         _avg_X->new_value(z);
 			_avg_Y->new_value(x);
+			_avg_yaw->new_value(yaw + (M_PI/2));
 			float avg_pos_angle  	= _avg_pos->avg();
                         float avg_dock_angle 	= _avg_dock->avg();
+                        float avg_yaw_angle     = _avg_yaw->avg();
 			float avg_position_X 	= _avg_X->avg();
 			float avg_position_Y 	= _avg_Y->avg();
-                        _avg_position_angle 	= avg_pos_angle;
+			_avg_position_angle 	= avg_pos_angle;
                         _avg_docking_angle  	= avg_dock_angle;
 			_avg_position_X 	= avg_position_X;
 			_avg_position_Y         = avg_position_Y;
+			_avg_yaw_angle		= avg_yaw_angle;
  
                     }
 		_g_mutex.unlock();
@@ -579,8 +574,8 @@ if(alpha_rad != 0.0){
 void Docking::drive_forward(float distance){
 
 ROS_INFO("Start to move forward ...");
-// -0.07 is a magic offset to drive exact distances
-distance	    = distance - 0.07;
+// -0.055 is a magic offset to drive exact distances
+distance	    = distance - 0.055;
 
 float velocity      = 0.15;
 float direction     = distance / getAmount(distance); 
@@ -657,43 +652,21 @@ void Docking::move_to(float x, float y){
 
 
 /**
- * This function should memorize the actuall position. 
- * The position is saved in the variables 
- * _start_pos_x, _start_pos_y, and _start_pos_z.
+ * This function turns the robot counter clock-wise until the 
+ * Apriltag can be seen by the camera.
  */
-void Docking::RememberPosition(){
-	// Lese Position aus dem base_link
-	    tf::StampedTransform transform;
-	    try{
-		ros::Time begin = ros::Time::now();
-		listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(5.0));
-		listener->lookupTransform("base_link", _tag_name,ros::Time(0), transform);
-	    }catch (tf::TransformException ex){
-		ROS_ERROR("%s",ex.what());
-		ros::Duration(1.0).sleep();
-	    }
-	    _start_pos_x = transform.getOrigin().x();
-	    _start_pos_y = transform.getOrigin().y();
-	    _start_pos_z = transform.getOrigin().z();
-	}
-
-
-	/**
-	 * This function turns the robot counter clock-wise until the 
-	 * Apriltag can be seen by the camera.
-	 */
-	void Docking::searchTag(){
-	    ROS_INFO("searching Tag ...");
-	    _find_tag = true;// switch on the callback function findTag
-	   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
-	   while(!_TAG_AVAILABLE){
-		geometry_msgs::Twist base; 
-		base.linear.x   = 0.0;
-        	base.angular.z  = 0.8;//5.0 * (M_PI/180);
-        	_publisher.publish(base);
-       	   ros::Duration(0.5).sleep();
-           }
-    _find_tag = false; // switch off the callback function findTag
+void Docking::searchTag(){
+    ROS_INFO("searching Tag ...");
+    _find_tag = true;// switch on the callback function findTag
+   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
+   while(!_TAG_AVAILABLE){
+	geometry_msgs::Twist base; 
+	base.linear.x   = 0.0;
+       	base.angular.z  = 0.8;//5.0 * (M_PI/180);
+       	_publisher.publish(base);
+  	ros::Duration(0.5).sleep();
+   }
+  _find_tag = false; // switch off the callback function findTag
 }
 
 /**
@@ -706,8 +679,9 @@ void Docking::adjusting(){
 
 	startReadingAngle();
 
-	float yaw = get_yaw_angle();
-
+	//float yaw = get_yaw_angle();
+	float yaw = _avg_yaw_angle;
+	ROS_INFO("Adjusting Yaw = %f",yaw);
 	stopReadingAngle();
 	move_angle(-yaw);
 }
@@ -716,8 +690,7 @@ void Docking::adjusting(){
 * The robot turns until the docking asngle is smaller than epsilon.
 */
 void Docking::watchTag(){
-   _start_avg = true; 
-   ros::Duration(1.5).sleep(); //wait until the tag can be recognized
+   startReadingAngle();
    float epsilon = 3.0 ;
    while(getAmount((180/M_PI)*_avg_docking_angle) > epsilon){
         geometry_msgs::Twist base;
@@ -727,7 +700,7 @@ void Docking::watchTag(){
         ros::Duration(0.5).sleep();
 	//ROS_INFO("Angle = %f",(180/M_PI)*_avg_docking_angle);
     }
-   _start_avg = false;
+    stopReadingAngle();
 }
 
 
@@ -801,9 +774,12 @@ void  Docking::startReadingAngle(){
 	_start_avg = false;
         _avg_pos->flush_array();
         _avg_dock->flush_array();
+	_avg_yaw->flush_array();
+	_avg_X->flush_array();
+	_avg_Y->flush_array();
         _start_avg = true;
-        ros::Duration(6.0).sleep();
-}
+        ros::Duration(5.0).sleep();
+	}
 
 void Docking::stopReadingAngle(){
 	_start_avg = false;
@@ -815,7 +791,6 @@ void Docking::stopReadingAngle(){
  */
 void Docking::positioning(){
 	ROS_INFO("Staring positioning...");
-	RememberPosition();
 	startReadingAngle();
 		float a_pos_rad             = _avg_position_angle;
 		float a_pos_deg		    = (180/M_PI)*_avg_position_angle;
