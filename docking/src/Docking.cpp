@@ -339,6 +339,7 @@ Docking::Docking(ros::NodeHandle* nodeHandle,int tag_id,docking::DockingFeedback
 	std::string tagid_str = std::to_string(tag_id); 
 	_tag_name = "tag_"+tagid_str;
 	_tag_id   = tag_id; 
+	ROS_ERROR("%s",_tag_name.c_str());
 	//We wait until tf comes up... 
         ros::Duration(5.0).sleep();
         //All other variables get initilized
@@ -853,13 +854,40 @@ void Docking::positioning(){
             a_pos_deg = getAmount((180/M_PI) * a_pos_rad);
             //ROS_ERROR("A_POS_DEG = %f",a_pos_deg); 
             if(a_pos_deg < 20.0){
-                if(a_pos_deg < 10.0){
+               if(a_pos_deg < 10.0){
                     startReadingAngle();
                     ros::Duration(1.0).sleep();
                     docking();
-                }else{   
-		    linearApproach();
+                }else{  
+
+
+		    // We should only allow the linear approach if the robot is 
+		    // far enough away from the docking station
+		   startReadingAngle();
+		   float X       = getAmount(_avg_position_X);
+		   float epsilon = epsi(X); 
+		   float phi     = (M_PI/2) - epsilon;
+		   float D       = tan(phi) * getAmount(_avg_position_Y);
+ 		   stopReadingAngle();
+		
+	           ROS_INFO("D = %f",D);
+		   ROS_INFO("X = %f",X);
+		   ROS_INFO("d = %f",X-D);		
+		   // <u>After</u> the linear approch the robot should be at least 
+		   // 10cm away from the docking station we have to caculate this 
+		   // distance to prevent crashing into the docking station while 
+		   // we perform the linear approach, which does not have 
+		   // a colision control.
+		   if( (X-D) > 0.10 ){	
+		    		linearApproach();
+			}else{
+				// if we cannot do the linear approach, because we are 
+				// to close to the docking station we simply try to dock.
+				//  Actually is should never come to this.
+				docking();
+			}
                 }
+		
             }else{
                 ROS_ERROR("RESTART_POSITIONING");
                 positioning();

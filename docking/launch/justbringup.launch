@@ -5,5 +5,13 @@
 <!--<include file="$(find tams_turtlebot_bringup)/launch/tams_turtlebot.launch"  />-->
 
 
+
+<arg name="tag_param" default="[{id: 100,size: 0.092},{id: 99,size: 0.100},{id: 98,size: 0.100},{id: 97,size: 0.100}]"/>
+<node pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector">
+    <rosparam param="tag_descriptions" subst_value="True" >$(arg tag_param)</rosparam>
+    <remap from="/image_rect" to="/camera/rgb/image_raw"/>
+    <remap from="/camera_info" to="/camera/rgb/camera_info"/>
+</node>
+
 </launch>
 
