@@ -88,9 +88,9 @@ return v_new;
 float Docking::epsi(float _tx){
 
 float tx    = 100*_tx;
-float tb    = 12.5; //Tagbreite in cm
+float tb    = 13.0; //Tagbreite in cm
 
-float p     = 0.25;
+float p     = 0.30;
 float theta = 50 * (M_PI/180);
 float a     = tan(M_PI/2);
 float b     = tan(theta/2);  
@@ -676,15 +676,11 @@ void Docking::searchTag(){
  */
 void Docking::adjusting(){
 	ROS_INFO("Adjusting position ...");
-	
-
 	startReadingAngle();
-
-	//float yaw = get_yaw_angle();
 	float yaw = _avg_yaw_angle;
 	ROS_INFO("Adjusting Yaw = %f",yaw);
 	stopReadingAngle();
-	move_angle(-yaw);
+	move_angle(yaw);
 }
 
 /**
