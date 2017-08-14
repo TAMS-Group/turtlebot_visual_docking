@@ -88,7 +88,7 @@ return v_new;
 float Docking::epsi(float _tx){
 
 float tx    = 100*_tx;
-float tb    = 13.0; //Tagbreite in cm
+float tb    = 23.0; //Tagbreite in cm
 
 float p     = 0.30;
 float theta = 50 * (M_PI/180);
@@ -302,7 +302,7 @@ Docking::Docking(){
         //The Parameters are read from the launch file : start_docking.launch 
         std::string tag_id;
         if (_n->getParam("/dock/tag_id", tag_id)){
-            _tag_name = "tag_" + tag_id;
+	    _tag_name = "tag_" + tag_id;
 	    _tag_id = atoi(tag_id.c_str());
              ROS_INFO(" tag_id = %s",_tag_name.c_str());
         }else{
@@ -311,7 +311,7 @@ Docking::Docking(){
 	    _tag_id = 99;
            // exit(0);
         }
-       
+
         //Init();
         //exit(0);
         //We wait until tf comes up... 
@@ -718,53 +718,37 @@ void Docking::linearApproach(){
     stopReadingAngle();
 
     float alpha_deg     = (180/M_PI)*alpha;
-    float epsilon_rad   = epsi(pos.x);
+    float epsilon_rad   = (M_PI/180)*40;//epsi(pos.x);
     float epsilon_deg   = (180/M_PI)*epsilon_rad;
     float e 		= getAmount(epsilon_rad);
 
+    float beta 		= (M_PI/2) - epsilon_rad;
+    float d 		= 100*pos.y; //in cm
+    float way		= sqrt( (d*d) + (1 + (tan(beta)*tan(beta))) );
+    way 		= way/100; 
+
     ROS_INFO("POS_ANGLE= %f",alpha_deg);
-    ROS_INFO("EPSILON= %f",epsilon_deg);	    
+    ROS_INFO("EPSILON= %f",epsilon_deg);	
+    ROS_INFO("Way = %f", way);    
     
-     startReadingAngle();
-  
      if(alpha < 0.0 ) { //TURN RIGHT
             ROS_INFO("Turning right with epsilon= %f deg",epsilon_deg);
-            move_angle(-e);	
-            float alpha_neu = -360;
-            while(alpha_neu < 0.0){
-                geometry_msgs::Twist    base;
-                base.angular.z  = 0;
-                base.linear.x   = 0.035;
-                alpha_neu       = (180/M_PI)*(_avg_position_angle);
-                ros::Duration(0.5).sleep();
-		_publisher.publish(base);
-            }
-        }
-        if(alpha > 0.0){ //TURN LEFT
+            move_angle(-e);
+	    drive_forward(way);	
+     	    move_angle(e);   
+	}
+
+    if(alpha > 0.0){ //TURN LEFT
             ROS_INFO("Turning left with epsilon= %f deg",epsilon_deg);
             move_angle(e);
-            float alpha_neu = 360;
-            while(alpha_neu > 0.0){
-                geometry_msgs::Twist    base;
-                base.angular.z  = 0;
-                base.linear.x   = 0.035;
-                alpha_neu       = (180/M_PI)*(_avg_position_angle);
-		ros::Duration(0.5).sleep();
-                //ROS_ERROR("alpha = %f",alpha_neu);
-		_publisher.publish(base);
-                }
-        }
-        ROS_INFO("STOP");
-        stopReadingAngle();
-        if(alpha_deg < 0.0){//TURN LEFT AGAIN
-                move_angle(e);
-        }
-        if(alpha_deg > 0.0){ //TURN RIGHT AGAIN
-                move_angle(-e);
-        }
-        this->adjusting();
-        ROS_INFO("Start Docking");
-	docking();
+            drive_forward(way);	
+	    move_angle(-e);
+	}
+      this->adjusting();
+      ROS_INFO("Start Docking");
+
+	startReadingAngle();
+	this->docking();	
 }
 
 void  Docking::startReadingAngle(){
@@ -803,13 +787,8 @@ void Docking::positioning(){
 	if( getAmount(a_pos_deg)  < 6.0){
 	    ROS_INFO("Start frontal docking without positioning...");
 	    ROS_INFO("Angle = %f",_avg_position_angle);
-	    _start_avg = false;
-            ros::Duration(1.0).sleep();
-            _avg_pos->flush_array();
-            _avg_dock->flush_array();
-            _start_avg = true;
-            ros::Duration(1.0).sleep();
-            docking(); 
+            startReadingAngle();
+	    docking(); 
         }else{
             float alpha_yaw 	= get_yaw_angle();
             float beta_rad      = 0.0;
@@ -880,6 +859,7 @@ void Docking::positioning(){
 				// if we cannot do the linear approach, because we are 
 				// to close to the docking station we simply try to dock.
 				//  Actually is should never come to this.
+				startReadingAngle();
 				docking();
 			}
                 }
@@ -899,9 +879,13 @@ void Docking::docking(){
 //    ROS_INFO("Startring frontal docking...");
     geometry_msgs::Twist      base;
     float DELTA             = 2.0;
-    _try_more                = false;
-    Docking::Vector2 pos             = get_position();
-    float alpha_deg         = (180/M_PI)*_avg_docking_angle;
+    _try_more               = false;
+	Docking::Vector2 pos;
+	pos.x 		= _avg_position_X;
+	pos.y 		= _avg_position_Y;
+	//Docking::Vector2 pos    = get_position();
+     	float alpha_deg         = (180/M_PI)*_avg_docking_angle;
+	//stopReadingAngle();
     // if the angle becomes bigger than 15 deg 
     if((alpha_deg > 15.0) && _try_more){
         ROS_ERROR("DOCKING WILL FAIL");
@@ -917,7 +901,7 @@ void Docking::docking(){
         }else{
             base.angular.z = 0;
         if(pos.y > 0.44 ){
-		base.linear.x = 0.1;// We should drive very slow
+		base.linear.x = 0.5;// We should drive very slow
 	}else{
 		base.linear.x = 0.02;// If we are near enough we drive even slower
 	}
@@ -963,6 +947,7 @@ bool Docking::startDocking(){
 	
 	adjusting();
 	ros::Duration(2.0).sleep();
+	startReadingAngle();
 	docking();
  	return true;
 }	

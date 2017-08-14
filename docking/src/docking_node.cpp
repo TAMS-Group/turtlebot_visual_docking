@@ -10,7 +10,8 @@ int main(int argc, char **argv){
         Docking *d = new Docking();
        
 //	d->startDocking();
-	d->drive_forward(0.5);
+//	d->drive_forward(0.5);
+	d->linearApproach();
 	//ros::spin();
         return 0;
 }
