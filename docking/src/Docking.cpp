@@ -87,6 +87,9 @@ return v_new;
  */
 float Docking::epsi(float _tx){
 
+return (M_PI/180)*40;
+
+/*
 float tx    = 100*_tx;
 float tb    = 23.0; //Tagbreite in cm
 
@@ -102,7 +105,7 @@ float Q     = (-1*(a*b+A))/(1+a*b*A);
 float tane  = (-P/2) + sqrt((P/2)*(P/2) - Q);
 
 return atan(tane);
-
+*/
 }
 
 /**
@@ -252,11 +255,11 @@ void Docking::Init(){
     _try_more 		= true;
     _start_avg		= false;
     _bumper_pressed     = false;
-    _avg_pos 		= new Avg(60);
+    _avg_pos 		= new Avg(10);
     _avg_dock		= new Avg(10);
-    _avg_X 		= new Avg(60);
-    _avg_Y		= new Avg(60);
-    _avg_yaw		= new Avg(30);
+    _avg_X 		= new Avg(10);
+    _avg_Y		= new Avg(10);
+    _avg_yaw		= new Avg(10);
     _odom_pos.x 	= 0.0;
     _odom_pos.y		= 0.0;
 }
@@ -718,7 +721,7 @@ void Docking::linearApproach(){
     stopReadingAngle();
 
     float alpha_deg     = (180/M_PI)*alpha;
-    float epsilon_rad   = (M_PI/180)*40;//epsi(pos.x);
+    float epsilon_rad   = epsi(pos.x);
     float epsilon_deg   = (180/M_PI)*epsilon_rad;
     float e 		= getAmount(epsilon_rad);
 
@@ -900,8 +903,8 @@ void Docking::docking(){
             base.angular.z = -0.27;
         }else{
             base.angular.z = 0;
-        if(pos.y > 0.44 ){
-		base.linear.x = 0.5;// We should drive very slow
+        if(pos.x > 0.44 ){
+		base.linear.x = 0.15;// We should drive very slow
 	}else{
 		base.linear.x = 0.02;// If we are near enough we drive even slower
 	}
