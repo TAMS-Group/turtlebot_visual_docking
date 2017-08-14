@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
 #include <docking/DockingAction.h>
+#include <docking/GoHomeAction.h>
 #include <Docking.h>
 #include <thread>
 #include <future>
@@ -40,16 +41,22 @@ protected:
 
   ros::NodeHandle _nh;
   // NodeHandle instance must be created before this line. Otherwise strange error occurs. 
-  actionlib::SimpleActionServer<docking::DockingAction> _as; 
+  actionlib::SimpleActionServer<docking::DockingAction> _as_tagid;
+  actionlib::SimpleActionServer<docking::GoHomeAction>  _as_gohome; 
   std::string _action_name;
 
   //create messages that are used to published feedback/result
   docking::DockingFeedback _feedback;
   docking::DockingResult   _result;
 
+  docking::GoHomeFeedback  _gh_feedback;
+  docking::GoHomeResult    _gh_result;	
 
  // Parameters from the start_docking.launch file
  int	_tag_id;
+ double _HOME_POSE_X;
+ double _HOME_POSE_Y;
+
  std::future<bool> _future_result;
  std::future<void> _future_detection;
 private:
@@ -70,10 +77,19 @@ private:
 
 
    bool runDocking(){
-	ROS_INFO("runDocking()"); 
+	ROS_INFO("runing Docking ..."); 
 	_feedback.text.clear();
 	Docking *d = new Docking(&_nh,_tag_id,&_feedback);
 	return d->startDocking();
+   }
+
+  bool runGoHome(){
+        ROS_INFO("running GoHome ... ");
+        _feedback.text.clear();
+        Docking *d = new Docking(&_nh,_tag_id,&_feedback);
+	//TODO: Acually we still have to calculate the PRE_DOCKING_POSE out of the HOME_POSE
+	d->move_to(_HOME_POSE_X,_HOME_POSE_Y);
+        return d->startDocking();
    }
 
 
@@ -88,21 +104,55 @@ private:
    }
 
 
+   void runGoHomeThread(){
+        _future_result = std::async(std::launch::async,&DockingServer::runGoHome,this);
+   }
+
 
 public: 
 
 // Constructor 
 DockingServer(std::string name) :
-    _as(_nh, name, boost::bind(&DockingServer::executeCB, this, _1), false),
-    _action_name(name)
+    _as_tagid(_nh, name, boost::bind(&DockingServer::executeCB, this, _1), false),
+    _action_name(name),
+    _as_gohome(_nh,"GoHomeActionServer",boost::bind(&DockingServer::executeGoHome, this, _1),false)
   {
-    _as.start();
-  }
+    _as_tagid.start();
+    _as_gohome.start();	  
+}
 
 // Destructor
   ~DockingServer(void)
   {
   }
+
+
+/**
+ * This is the callback function if the robot receives an GoHome Message.
+ * The robot should drive to the PRE_DOCKING_POSE by using moveBase. 
+ * Therefore the robot must know where its location is.  
+ */
+void executeGoHome(const docking::GoHomeGoalConstPtr &home){
+
+
+ROS_INFO("GO HOME");
+
+
+double HOME_POSE_X = 0.0;
+double HOME_POSE_Y = 0.0;
+if (_nh.getParam("/dockServer/HOME_POSE_X", HOME_POSE_X)){
+	_HOME_POSE_X = HOME_POSE_X;
+}
+if (_nh.getParam("/dockServer/HOME_POSE_Y", HOME_POSE_Y)){
+	_HOME_POSE_Y = HOME_POSE_Y;
+}
+
+
+	ROS_INFO(" HOME POSE: (%f , %f)",_HOME_POSE_X,_HOME_POSE_Y);
+
+	runGoHomeThread();
+}
+
 
 
 void executeCB(const docking::DockingGoalConstPtr &goal){
@@ -126,19 +176,21 @@ do{
 	//_as.publishFeedback(_feedback);
 
 	status = _future_result.wait_for(std::chrono::seconds(2));
-     if (_as.isPreemptRequested() || !ros::ok()){
+     if (_as_tagid.isPreemptRequested() || !ros::ok()){
         	ROS_INFO("Cancel...");
         	// set the action state to preempted
-        	_as.setPreempted();
+        	_as_tagid.setPreempted();
         	// Now we have to kill the DockingThread
 		exit(0);
     }
 }while(status != std::future_status::ready);
+
 bool success = _future_result.get();
+
 if(success){
 	ROS_INFO("reached");
 	_result.text = "Arrived on docking station successfully.";
-	_as.setSucceeded(_result);
+	_as_tagid.setSucceeded(_result);
 }
 }
 

@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_action_files(
   DIRECTORY action
   FILES Docking.action
+  FILES GoHome.action
 )
 
 
