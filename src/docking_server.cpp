@@ -167,10 +167,10 @@ void executeGoHome(const turtlebot_visual_docking::GoHomeGoalConstPtr &home){
 ROS_INFO("GO HOME");
 
 
-double HOME_POSE_X = 0.0;
-double HOME_POSE_Y = 0.0;
-double HOME_POSE_A = 0.0;
-int    ID 	   = 0;
+double HOME_POSE_X = 2.97;
+double HOME_POSE_Y = -0.46;
+double HOME_POSE_A = -1.56;
+int    ID 	   = 99;
 if (_nh.getParam("/dockServer/HOME_POSE_X", HOME_POSE_X)){
 	_HOME_POSE_X = HOME_POSE_X;
 }
@@ -184,6 +184,12 @@ if (_nh.getParam("/dockServer/TAG_ID", ID)){
         _tag_id = ID;
 }
 
+
+//We need this constants only for debuging 
+_HOME_POSE_X = 2.97;
+_HOME_POSE_Y = -0.46;
+_HOME_POSE_A = -1.56;
+_tag_id      = 99;
 
 
 	ROS_INFO(" HOME POSE: (%f , %f)",_HOME_POSE_X,_HOME_POSE_Y);
