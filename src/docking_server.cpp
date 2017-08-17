@@ -29,9 +29,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
-#include <docking/DockingAction.h>
-#include <docking/GoHomeAction.h>
-#include <dock/Docking.h>
+#include <turtlebot_visual_docking/DockingAction.h>
+#include <turtlebot_visual_docking/GoHomeAction.h>
+#include <turtlebot_visual_docking/Docking.h>
 #include <thread>
 #include <future>
 
@@ -41,16 +41,16 @@ protected:
 
   ros::NodeHandle _nh;
   // NodeHandle instance must be created before this line. Otherwise strange error occurs. 
-  actionlib::SimpleActionServer<docking::DockingAction> _as_tagid;
-  actionlib::SimpleActionServer<docking::GoHomeAction>  _as_gohome; 
+  actionlib::SimpleActionServer<turtlebot_visual_docking::DockingAction> _as_tagid;
+  actionlib::SimpleActionServer<turtlebot_visual_docking::GoHomeAction>  _as_gohome; 
   std::string _action_name;
 
   //create messages that are used to published feedback/result
-  docking::DockingFeedback _feedback;
-  docking::DockingResult   _result;
+  turtlebot_visual_docking::DockingFeedback _feedback;
+  turtlebot_visual_docking::DockingResult   _result;
 
-  docking::GoHomeFeedback  _gh_feedback;
-  docking::GoHomeResult    _gh_result;	
+  turtlebot_visual_docking::GoHomeFeedback  _gh_feedback;
+  turtlebot_visual_docking::GoHomeResult    _gh_result;	
 
  // Parameters from the start_docking.launch file
  int	_tag_id;
@@ -78,13 +78,13 @@ private:
 
    bool runDocking(){
 	ROS_INFO("runing Docking ..."); 
-	Docking *d = new Docking(&_nh,_tag_id,&_feedback);
+	Docking *d = new Docking(&_nh,_tag_id);
 	return d->startDocking();
    }
 
   bool runGoHome(){
         ROS_INFO("running GoHome ... ");
-        Docking *d = new Docking(&_nh,_tag_id,&_feedback);
+        Docking *d = new Docking(&_nh,_tag_id);
 	// First we need to calculate the PRE_DOCKING_POSE
 
 	float X = _HOME_POSE_X - 0.60;
@@ -161,7 +161,7 @@ return success;
  * The robot should drive to the PRE_DOCKING_POSE by using moveBase. 
  * Therefore the robot must know where its location is.  
  */
-void executeGoHome(const docking::GoHomeGoalConstPtr &home){
+void executeGoHome(const turtlebot_visual_docking::GoHomeGoalConstPtr &home){
 
 
 ROS_INFO("GO HOME");
@@ -203,7 +203,7 @@ if (_nh.getParam("/dockServer/TAG_ID", ID)){
 
 
 
-void executeCB(const docking::DockingGoalConstPtr &goal){
+void executeCB(const turtlebot_visual_docking::DockingGoalConstPtr &goal){
 
 // Read the tagid and compare it to the default tagid defined in /etc/environment 
 _tag_id  = goal->tagid;

@@ -52,9 +52,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <kobuki_msgs/BumperEvent.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/LinearMath/Vector3.h>
-#include <dock/Avg.h>
+#include <turtlebot_visual_docking/Avg.h>
 #include <mutex>
-#include <docking/DockingAction.h>
+#include <turtlebot_visual_docking/DockingAction.h>
 
 class Docking
 {
@@ -79,7 +79,6 @@ private:
 	ros::Subscriber         _sub8;
 	double                  _angle;
 	ros::NodeHandle         *_n;
-	docking::DockingFeedback *_feedback;
 	tf::StampedTransform    _transform_cam_base;
 	tf::StampedTransform    _transform_optical_cam;
 	int                     _ticks_right;
@@ -127,7 +126,7 @@ public:
 
 	void startFrontalDocking();
 	Docking();
-	Docking(ros::NodeHandle* nodeHandle,int tag_id,docking::DockingFeedback* feedback);
+	Docking(ros::NodeHandle* nodeHandle,int tag_id);
 	void get_odom_pos(const nav_msgs::Odometry& msg);
 	void get_ticks(const kobuki_msgs::SensorState& msg);
 	void get_bumper_status(const kobuki_msgs::BumperEvent& msg);

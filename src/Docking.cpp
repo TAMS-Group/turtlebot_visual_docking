@@ -24,7 +24,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
-#include <dock/Docking.h>
+#include <turtlebot_visual_docking/Docking.h>
 
 
 /**
@@ -326,12 +326,11 @@ Docking::Docking(){
 }
 
 
-Docking::Docking(ros::NodeHandle* nodeHandle,int tag_id,docking::DockingFeedback* feedback){
+Docking::Docking(ros::NodeHandle* nodeHandle,int tag_id){
      
 
 	_n = nodeHandle;
 	_ac  = new MoveBaseClient("move_base", true);
-	_feedback   = feedback;
 	listener    = new tf::TransformListener();   
         _publisher  = _n->advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/teleop", 1);
 	
@@ -950,11 +949,8 @@ void Docking::docking(){
  * This function starts the docking.
  */
 bool Docking::startDocking(){
-	if(_feedback != NULL){
-		//_feedback->text.push_back("Start Docking ...");
-	}
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
-	ros::Duration(5.0).sleep();
+	ros::Duration(1.0).sleep();
 	searchTag();
 	watchTag();
 	ros::Duration(2.0).sleep();	
