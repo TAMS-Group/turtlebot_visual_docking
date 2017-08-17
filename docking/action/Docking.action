@@ -1,0 +1,15 @@
+# goal
+# Here only the tagid is specified. The value tagid overrides the tagid which is specified 
+# in the robots local file /etc/environments. Thus the default value from tagid can overwritten,
+# in oder to make docking to different stations possible.  
+# If the tagid is '-1' the default tagid from /etc/environment will be used.
+int32 tagid
+---
+# result
+# The text sould be: 
+# "Arrived on docking station successfully." if docking attempt was successfully (at first attempt)
+# "The were N attempets nessesary to dock successfully." if docking attemmpt was succesfull after N tries 
+# "Docking finally faild after 5 docking attemps." ELSE
+
+string text
+---
