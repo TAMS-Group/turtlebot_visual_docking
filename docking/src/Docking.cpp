@@ -249,7 +249,7 @@ void Docking::Init(){
     get_cameraLink_baseLink();
     get_optical_frame();
     _start_avg          = false;
-    _find_tag 		= true;
+    _find_tag 		= false;
     _angle 		= 0.0;
     _TAG_AVAILABLE	= false;
     _try_more 		= true;
@@ -524,8 +524,18 @@ void Docking::findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 		int size = msg.detections.size() ;	
 		for(int i = 0; i < size ; i++){
 			int tag_id = msg.detections[i].id;
+			//We are only allowed to take new tag detections!!
 			if(_tag_id == tag_id){
-				_TAG_AVAILABLE = true;
+				ros::Duration X		= ros::Duration(2.0);
+				ros::Time time 		= msg.detections[i].pose.header.stamp;
+                                ros::Time now  		= ros::Time::now();
+				ros::Duration age 	= now - time;
+
+				if(X > age){
+					double secs = age.toSec();
+					ROS_INFO("AGE= %f",secs);	
+					_TAG_AVAILABLE = true;
+				}
 			}
 		}
 	}
@@ -903,13 +913,14 @@ void Docking::docking(){
             base.angular.z = -0.27;
         }else{
             base.angular.z = 0;
-        if(pos.x > 0.44 ){
+        if(pos.x > 0.60 ){
 		base.linear.x = 0.15;// We should drive very slow
 	}else{
 		base.linear.x = 0.02;// If we are near enough we drive even slower
 	}
         }
 
+	//ROS_INFO("POS.x = %f",pos.x);
 	// Finally publish the __base_cmd the __base_cmd
         // The Robot should stop when the battery is recharging
         // The Robot should drive backwards, when the bumper was triggered
@@ -940,9 +951,10 @@ void Docking::docking(){
  */
 bool Docking::startDocking(){
 	if(_feedback != NULL){
-		_feedback->text.push_back("Start Docking ...");
+		//_feedback->text.push_back("Start Docking ...");
 	}
 	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
+	ros::Duration(5.0).sleep();
 	searchTag();
 	watchTag();
 	ros::Duration(2.0).sleep();	

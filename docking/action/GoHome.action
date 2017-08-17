@@ -1,8 +1,8 @@
 #goal definition
-int32 tagid
+#int32 tagid
 ---
 #result definition
 string text
 ---
 #feedback
-string[] text 
+#string[] text 

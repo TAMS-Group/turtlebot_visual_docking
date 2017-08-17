@@ -11,7 +11,9 @@
 
 <node name="dockServer" pkg="docking" type="docking_server" respawn="false" output="screen">
 	<param name="HOME_POSE_X" type="double" value="$(env TURTLEBOT_HOME_POSE_X)" />
-        <param name="HOME_POSE_Y" type="double" value="$(env TURTLEBOT_HOME_POSE_Y)" />;
+        <param name="HOME_POSE_Y" type="double" value="$(env TURTLEBOT_HOME_POSE_Y)" />
+	<param name="HOME_POSE_A" type="double" value="$(env TURTLEBOT_HOME_POSE_A)" />
+	<param name="TAG_ID" 	  type="int" value="$(env RPC_DOCK_ID)" />
 </node>
 
 </launch>

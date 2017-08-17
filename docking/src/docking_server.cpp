@@ -56,7 +56,7 @@ protected:
  int	_tag_id;
  double _HOME_POSE_X;
  double _HOME_POSE_Y;
-
+ double _HOME_POSE_A;
  std::future<bool> _future_result;
  std::future<void> _future_detection;
 private:
@@ -87,8 +87,18 @@ private:
         ROS_INFO("running GoHome ... ");
         _feedback.text.clear();
         Docking *d = new Docking(&_nh,_tag_id,&_feedback);
-	//TODO: Acually we still have to calculate the PRE_DOCKING_POSE out of the HOME_POSE
-	d->move_to(_HOME_POSE_X,_HOME_POSE_Y);
+	// First we need to calculate the PRE_DOCKING_POSE
+
+	float X = _HOME_POSE_X - 0.60;
+	float Y = _HOME_POSE_Y;
+	float phi = _HOME_POSE_A;
+	float Y_map = X*cos(phi) + Y*sin(phi);
+	float X_map = -X*sin(phi) + Y*cos(phi);
+	
+	ROS_INFO("PreDockingPose: ( % f , %f )",X_map,Y_map);
+
+
+	d->move_to(X_map,Y_map);
         return d->startDocking();
    }
 
@@ -127,6 +137,27 @@ DockingServer(std::string name) :
   }
 
 
+
+bool cancelLoop(){
+// After running the docking algorithm we wait until the algorithm has 
+// finished or an cancel massage has been send.  
+std::future_status status;
+do{
+        status = _future_result.wait_for(std::chrono::seconds(2));
+     if (_as_tagid.isPreemptRequested() || !ros::ok()){
+                ROS_INFO("Cancel...");
+                // set the action state to preempted
+                _as_tagid.setPreempted();
+                // Now we have to kill the DockingThread
+                exit(0);
+    }
+}while(status != std::future_status::ready);
+
+bool success = _future_result.get();
+
+return success;
+}
+
 /**
  * This is the callback function if the robot receives an GoHome Message.
  * The robot should drive to the PRE_DOCKING_POSE by using moveBase. 
@@ -140,17 +171,36 @@ ROS_INFO("GO HOME");
 
 double HOME_POSE_X = 0.0;
 double HOME_POSE_Y = 0.0;
+double HOME_POSE_A = 0.0;
+int    ID 	   = 0;
 if (_nh.getParam("/dockServer/HOME_POSE_X", HOME_POSE_X)){
 	_HOME_POSE_X = HOME_POSE_X;
 }
 if (_nh.getParam("/dockServer/HOME_POSE_Y", HOME_POSE_Y)){
 	_HOME_POSE_Y = HOME_POSE_Y;
 }
+if (_nh.getParam("/dockServer/HOME_POSE_A", HOME_POSE_A)){
+        _HOME_POSE_A = HOME_POSE_A;
+}
+if (_nh.getParam("/dockServer/TAG_ID", ID)){
+        _tag_id = ID;
+}
+
 
 
 	ROS_INFO(" HOME POSE: (%f , %f)",_HOME_POSE_X,_HOME_POSE_Y);
 
 	runGoHomeThread();
+
+	bool success = cancelLoop();
+
+	if(success){
+        	ROS_INFO("reached");
+        	_result.text = "Successfully arrived on docking station.";
+		_gh_result.text = "Successfully arrived on docking station.";
+        	_as_tagid.setSucceeded(_result);
+		_as_gohome.setSucceeded(_gh_result);
+		}	
 }
 
 
@@ -166,26 +216,8 @@ _tag_id  = goal->tagid;
 // TODO: Docking algorithm sould produce feedback-messages
 runDockingThread();
 
-// After running the docking algorithm we wait until the algorithm has 
-// finished or an cancel massage has been send.  
-std::future_status status;
-do{
- 
-	//int soa = ARRAY_SIZE(_feedback.text);
-	//ROS_INFO("%i",soa); 
-	//_as.publishFeedback(_feedback);
 
-	status = _future_result.wait_for(std::chrono::seconds(2));
-     if (_as_tagid.isPreemptRequested() || !ros::ok()){
-        	ROS_INFO("Cancel...");
-        	// set the action state to preempted
-        	_as_tagid.setPreempted();
-        	// Now we have to kill the DockingThread
-		exit(0);
-    }
-}while(status != std::future_status::ready);
-
-bool success = _future_result.get();
+bool success = cancelLoop();
 
 if(success){
 	ROS_INFO("reached");
