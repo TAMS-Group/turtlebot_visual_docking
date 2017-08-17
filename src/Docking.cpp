@@ -282,7 +282,7 @@ void Docking::RegisterCallbackFunctions(){
 	_sub1 = _n->subscribe("mobile_base/sensors/imu_data",1,&Docking::actual_angle,this);
         _sub2 = _n->subscribe("docking_tags",1,&Docking::get_avg_position_angle,this);
         //_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
-        _sub4 = _n->subscribe("tag_detections",10,&Docking::findTag,this);
+        _sub4 = _n->subscribe("docking_tags",10,&Docking::findTag,this);
         _sub5 = _n->subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
         _sub6 = _n->subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
         _sub7 = _n->subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
