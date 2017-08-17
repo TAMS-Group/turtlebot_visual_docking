@@ -7,11 +7,12 @@
     <rosparam param="tag_descriptions" subst_value="True" >$(arg tag_param)</rosparam>
     <remap from="/image_rect" to="/camera/rgb/image_raw"/>
     <remap from="/camera_info" to="/camera/rgb/camera_info"/>
-  </node>
+    <remap from="/tag_detections" to="docking_tags"/> 
+ </node>
 
 
 <!-- Listener -->
-<node name="dock" pkg="docking" type="docking_node" args="--test" respawn="false" output="screen" >
+<node name="dock" pkg="docking" type="dock" args="--test" respawn="false" output="screen" >
 <param name="tag_id" type="str" value="$(env DOCK_ID)" />
 
 </node>

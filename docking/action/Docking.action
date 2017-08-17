@@ -11,5 +11,5 @@ int32 tagid
 # "The were N attempets nessesary to dock successfully." if docking attemmpt was succesfull after N tries 
 # "Docking finally faild after 5 docking attemps." ELSE
 
-string text
+string result
 ---

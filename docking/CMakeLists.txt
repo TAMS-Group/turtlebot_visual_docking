@@ -19,8 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_action_files(
   DIRECTORY action
-  FILES Docking.action
-  FILES GoHome.action
+  FILES Docking.action GoHome.action
 )
 
 
@@ -42,9 +41,9 @@ include_directories(
   include 
 )
 
-add_executable(docking_node src/docking_node.cpp src/Docking.cpp src/Avg.cpp)
-add_dependencies(docking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(docking_node ${catkin_LIBRARIES})
+add_executable(dock src/dock.cpp src/Docking.cpp src/Avg.cpp)
+add_dependencies(dock ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(dock ${catkin_LIBRARIES})
 
 add_executable(docking_server src/docking_server.cpp src/Docking.cpp src/Avg.cpp)
 add_dependencies(docking_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

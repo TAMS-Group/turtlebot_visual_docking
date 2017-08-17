@@ -78,14 +78,12 @@ private:
 
    bool runDocking(){
 	ROS_INFO("runing Docking ..."); 
-	_feedback.text.clear();
 	Docking *d = new Docking(&_nh,_tag_id,&_feedback);
 	return d->startDocking();
    }
 
   bool runGoHome(){
         ROS_INFO("running GoHome ... ");
-        _feedback.text.clear();
         Docking *d = new Docking(&_nh,_tag_id,&_feedback);
 	// First we need to calculate the PRE_DOCKING_POSE
 
@@ -196,8 +194,8 @@ if (_nh.getParam("/dockServer/TAG_ID", ID)){
 
 	if(success){
         	ROS_INFO("reached");
-        	_result.text = "Successfully arrived on docking station.";
-		_gh_result.text = "Successfully arrived on docking station.";
+        	_result.result = "Successfully";
+		_gh_result.result = "Successfull";
         	_as_tagid.setSucceeded(_result);
 		_as_gohome.setSucceeded(_gh_result);
 		}	
@@ -221,7 +219,7 @@ bool success = cancelLoop();
 
 if(success){
 	ROS_INFO("reached");
-	_result.text = "Arrived on docking station successfully.";
+	_result.result= "Successfull.";
 	_as_tagid.setSucceeded(_result);
 }
 }
