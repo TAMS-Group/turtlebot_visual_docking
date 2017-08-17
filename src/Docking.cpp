@@ -307,9 +307,9 @@ Docking::Docking(){
         if (_n->getParam("/dock/tag_id", tag_id)){
 	    _tag_name = "tag_" + tag_id;
 	    _tag_id = atoi(tag_id.c_str());
-             ROS_INFO(" tag_id = %s",_tag_name.c_str());
+             //ROS_INFO(" tag_id = %s",_tag_name.c_str());
         }else{
-            ROS_ERROR("No Parameters found!");
+            //ROS_ERROR("No Parameters found!");
             _tag_name = "tag_99";
 	    _tag_id = 99;
            // exit(0);
@@ -532,7 +532,7 @@ void Docking::findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 
 				if(X > age){
 					double secs = age.toSec();
-					ROS_INFO("AGE= %f",secs);	
+					//ROS_INFO("AGE= %f",secs);	
 					_TAG_AVAILABLE = true;
 				}
 			}
@@ -586,7 +586,7 @@ if(alpha_rad != 0.0){
 
 void Docking::drive_forward(float distance){
 
-ROS_INFO("Start to move forward ...");
+//ROS_INFO("Start to move forward ...");
 // -0.055 is a magic offset to drive exact distances
 distance	    = distance - 0.055;
 
@@ -641,7 +641,7 @@ void Docking::move_to(float x, float y){
 	    //MoveBaseClient ac("move_base", true);
 	    
 	    while(!_ac->waitForServer(ros::Duration(5.0))){
-		ROS_INFO("Waiting for the move_base action server to come up");
+		//ROS_INFO("Waiting for the move_base action server to come up");
 	    }
 	    move_base_msgs::MoveBaseGoal goal;
 	    
@@ -655,11 +655,11 @@ void Docking::move_to(float x, float y){
 
 	    goal.target_pose.pose.orientation.w = 1.0 ;
 
-	    ROS_INFO("Sending goal");
+	    //ROS_INFO("Sending goal");
 	    _ac->sendGoal(goal);
 
 	    _ac->waitForResult();
-	    ROS_INFO("Goal has been reached!");
+	    //ROS_INFO("Goal has been reached!");
 
 }
 
@@ -669,7 +669,7 @@ void Docking::move_to(float x, float y){
  * Apriltag can be seen by the camera.
  */
 void Docking::searchTag(){
-    ROS_INFO("searching Tag ...");
+    //ROS_INFO("searching Tag ...");
     _find_tag = true;// switch on the callback function findTag
    ros::Duration(1.5).sleep(); //wait until the tag can be recognized
    while(!_TAG_AVAILABLE){
@@ -687,10 +687,10 @@ void Docking::searchTag(){
  * resulting yaw angle of zero deg.
  */
 void Docking::adjusting(){
-	ROS_INFO("Adjusting position ...");
+	//ROS_INFO("Adjusting position ...");
 	startReadingAngle();
 	float yaw = _avg_yaw_angle;
-	ROS_INFO("Adjusting Yaw = %f",yaw);
+	//ROS_INFO("Adjusting Yaw = %f",yaw);
 	stopReadingAngle();
 	move_angle(yaw);
 }
@@ -720,7 +720,7 @@ void Docking::watchTag(){
  */
 void Docking::linearApproach(){
     adjusting();
-    ROS_INFO("Begin linear approach");
+    //ROS_INFO("Begin linear approach");
     Docking::Vector2 pos;
 
     startReadingAngle();
@@ -739,25 +739,25 @@ void Docking::linearApproach(){
     float way		= sqrt( (d*d) + (1 + (tan(beta)*tan(beta))) );
     way 		= way/100; 
 
-    ROS_INFO("POS_ANGLE= %f",alpha_deg);
-    ROS_INFO("EPSILON= %f",epsilon_deg);	
-    ROS_INFO("Way = %f", way);    
+    //ROS_INFO("POS_ANGLE= %f",alpha_deg);
+    //ROS_INFO("EPSILON= %f",epsilon_deg);	
+    //ROS_INFO("Way = %f", way);    
     
      if(alpha < 0.0 ) { //TURN RIGHT
-            ROS_INFO("Turning right with epsilon= %f deg",epsilon_deg);
+            //ROS_INFO("Turning right with epsilon= %f deg",epsilon_deg);
             move_angle(-e);
 	    drive_forward(way);	
      	    move_angle(e);   
 	}
 
     if(alpha > 0.0){ //TURN LEFT
-            ROS_INFO("Turning left with epsilon= %f deg",epsilon_deg);
+            //ROS_INFO("Turning left with epsilon= %f deg",epsilon_deg);
             move_angle(e);
             drive_forward(way);	
 	    move_angle(-e);
 	}
       this->adjusting();
-      ROS_INFO("Start Docking");
+      //ROS_INFO("Start Docking");
 
 	startReadingAngle();
 	this->docking();	
@@ -783,7 +783,7 @@ void Docking::stopReadingAngle(){
  * This function does the positioning described in section 6.1
  */
 void Docking::positioning(){
-	ROS_INFO("Staring positioning...");
+	//ROS_INFO("Staring positioning...");
 	startReadingAngle();
 		float a_pos_rad             = _avg_position_angle;
 		float a_pos_deg		    = (180/M_PI)*_avg_position_angle;
@@ -797,8 +797,8 @@ void Docking::positioning(){
 	//ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
 
 	if( getAmount(a_pos_deg)  < 6.0){
-	    ROS_INFO("Start frontal docking without positioning...");
-	    ROS_INFO("Angle = %f",_avg_position_angle);
+	    //ROS_INFO("Start frontal docking without positioning...");
+	    //ROS_INFO("Angle = %f",_avg_position_angle);
             startReadingAngle();
 	    docking(); 
         }else{
@@ -806,20 +806,20 @@ void Docking::positioning(){
             float beta_rad      = 0.0;
             float way           = 0.0;
             if(a_pos_deg < 0.0){// Now the robot has to turn right
-                    ROS_INFO("Turning right!");
+                    //ROS_INFO("Turning right!");
                     beta_rad = ((M_PI/2) + alpha_yaw);
                     way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle((-1)*beta_rad);
             }else{
                 if(a_pos_deg > 0.0){// Now the robot has to turn left
-                    ROS_INFO("Turning left");
+                    //ROS_INFO("Turning left");
                     beta_rad  = (M_PI/2) - alpha_yaw;
                     way = sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y);
                     this->move_angle(beta_rad);
                 }
             }
-            ROS_INFO("Weglaenge = %f",way);
-            ROS_INFO("Fahre los!");
+            //ROS_INFO("Weglaenge = %f",way);
+            //ROS_INFO("Fahre los!");
             // Drive in the frontal Position 
             drive_forward(getAmount(way));
             // Now the robot should be in the frontal Position 
@@ -857,9 +857,9 @@ void Docking::positioning(){
 		   float D       = tan(phi) * getAmount(_avg_position_Y);
  		   stopReadingAngle();
 		
-	           ROS_INFO("D = %f",D);
-		   ROS_INFO("X = %f",X);
-		   ROS_INFO("d = %f",X-D);		
+	           //ROS_INFO("D = %f",D);
+		   //ROS_INFO("X = %f",X);
+		   //ROS_INFO("d = %f",X-D);		
 		   // <u>After</u> the linear approch the robot should be at least 
 		   // 10cm away from the docking station we have to caculate this 
 		   // distance to prevent crashing into the docking station while 
@@ -900,8 +900,8 @@ void Docking::docking(){
 	//stopReadingAngle();
     // if the angle becomes bigger than 15 deg 
     if((alpha_deg > 15.0) && _try_more){
-        ROS_ERROR("DOCKING WILL FAIL");
-        ROS_ERROR("RESTARTING THE POSITIONING...");
+        //ROS_ERROR("DOCKING WILL FAIL");
+        //ROS_ERROR("RESTARTING THE POSITIONING...");
         positioning();
         return;
     }else{
@@ -934,7 +934,7 @@ void Docking::docking(){
             ros::Duration(0.5).sleep();
             docking();
          }else{
-            ROS_INFO("Try once more...\n");
+            //ROS_INFO("Try once more...\n");
             this->drive_backward(0.55);
             this->adjusting();
             _bumper_pressed = false;
