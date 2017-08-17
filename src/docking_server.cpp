@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <actionlib/server/simple_action_server.h>
 #include <docking/DockingAction.h>
 #include <docking/GoHomeAction.h>
-#include <Docking.h>
+#include <dock/Docking.h>
 #include <thread>
 #include <future>
 

@@ -1,5 +1,5 @@
 <package>
-  <name>docking</name>
+  <name>turtlebot_visual_docking</name>
   <version>1.0.0</version>
   <description>Docking Algorithm based on Apriltags</description>
   <maintainer email="poreski@gmx.de">Kolja Poreski</maintainer>

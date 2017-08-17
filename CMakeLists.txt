@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(docking)
+project(turtlebot_visual_docking)
 
 add_definitions(-std=c++11)
 ## Find catkin macros and libraries

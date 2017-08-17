@@ -27,8 +27,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 
-#ifndef AVG_H_
-#define AVG_H_
+#ifndef DOCKING_AVG_H_
+#define DOCKING_AVG_H_
+
+#pragma once
 
 #include <stdio.h>
 #include <iostream>     // std::cout
@@ -57,4 +59,4 @@ class Avg {
 };
 
 
-#endif
+#endif //DOCKING_AVG_H_

@@ -26,8 +26,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 
-#ifndef DOCKING_H_
-#define DOCKING_H_
+#ifndef DOCKING_DOCKING_H_
+#define DOCKING_DOCKING_H_
+
+#pragma once 
 
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
@@ -50,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <kobuki_msgs/BumperEvent.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/LinearMath/Vector3.h>
-#include <Avg.h>
+#include <dock/Avg.h>
 #include <mutex>
 #include <docking/DockingAction.h>
 
@@ -150,4 +152,4 @@ public:
 
 };
 
-#endif
+#endif //DOCKING_DOCKING_H_
