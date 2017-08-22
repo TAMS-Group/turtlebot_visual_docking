@@ -25,6 +25,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
+#pragma once
+
 #include "std_msgs/String.h"
 #include <iostream>
 #include <ros/ros.h>
@@ -55,6 +57,7 @@ protected:
  double _HOME_POSE_X;
  double _HOME_POSE_Y;
  double _HOME_POSE_A;
+
 private:
 
    bool runDocking(){
@@ -127,25 +130,19 @@ double HOME_POSE_X = 2.97;
 double HOME_POSE_Y = -0.46;
 double HOME_POSE_A = -1.56;
 int    ID 	   = 99;
-if (_nh.getParam("/dockServer/HOME_POSE_X", HOME_POSE_X)){
+if (_nh.getParam("/dock_server/HOME_POSE_X", HOME_POSE_X)){
 	_HOME_POSE_X = HOME_POSE_X;
 }
-if (_nh.getParam("/dockServer/HOME_POSE_Y", HOME_POSE_Y)){
+if (_nh.getParam("/dock_server/HOME_POSE_Y", HOME_POSE_Y)){
 	_HOME_POSE_Y = HOME_POSE_Y;
 }
-if (_nh.getParam("/dockServer/HOME_POSE_A", HOME_POSE_A)){
+if (_nh.getParam("/dock_server/HOME_POSE_A", HOME_POSE_A)){
         _HOME_POSE_A = HOME_POSE_A;
 }
-if (_nh.getParam("/dockServer/TAG_ID", ID)){
+if (_nh.getParam("/dock_server/TAG_ID", ID)){
         _tag_id = ID;
 }
 
-
-//We need this constants only for debuging 
-_HOME_POSE_X = 2.97;
-_HOME_POSE_Y = -0.46;
-_HOME_POSE_A = -1.56;
-_tag_id      = 99;
 	ROS_INFO(" HOME POSE: (%f , %f)",_HOME_POSE_X,_HOME_POSE_Y);
 	bool success = runGoHome();
 	if(success){

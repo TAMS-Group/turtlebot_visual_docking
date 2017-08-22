@@ -194,7 +194,7 @@ void Docking::Init(){
     _start_avg		= false;
     _bumper_pressed     = false;
     _avg_pos 		= new Avg(10);
-    _avg_dock		= new Avg(10);
+    _avg_dock		= new Avg(3);
     _avg_X 		= new Avg(10);
     _avg_Y		= new Avg(10);
     _avg_yaw		= new Avg(10);
@@ -723,7 +723,9 @@ void Docking::positioning(){
 	//ROS_ERROR("Pos_X read with : %f",_avg_position_X);
 	//ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
 
-	if( getAmount(a_pos_deg)  < 8.0){
+	float way = getAmount(sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y)); 
+
+	if( (getAmount(a_pos_deg)  < 10.0) || (way < 0.08)){
 	    //ROS_INFO("Start frontal docking without positioning...");
 	    //ROS_INFO("Angle = %f",_avg_position_angle);
             startReadingAngle();
@@ -731,7 +733,6 @@ void Docking::positioning(){
         }else{
             float alpha_yaw 	= _avg_yaw_angle;//get_yaw_angle();
             float beta_rad      = 0.0;
-            float way           = 0.0;
             if(a_pos_deg < 0.0){// Now the robot has to turn right
                     //ROS_INFO("Turning right!");
                     beta_rad = ((M_PI/2) + alpha_yaw);
@@ -840,9 +841,9 @@ void Docking::docking(){
         }else{
             base.angular.z = 0;
         if(pos.x > 0.60 ){
-		base.linear.x = 0.10;// We should drive very slow
+		base.linear.x = 0.08;// We should drive very slow
 	}else{
-		base.linear.x = 0.02;// If we are near enough we drive even slower
+		base.linear.x = 0.03;// If we are near enough we drive even slower
 	}
         }
 
@@ -863,7 +864,8 @@ void Docking::docking(){
          }else{
             //ROS_INFO("Try once more...");
             this->drive_backward(0.55);
-            this->adjusting();
+	    this->adjusting();
+	    this->startReadingAngle();
             _bumper_pressed = false;
             docking();
          }

@@ -27,9 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 
-#ifndef DOCKING_AVG_H_
-#define DOCKING_AVG_H_
-
 #pragma once
 
 #include <stdio.h>
@@ -59,4 +56,3 @@ class Avg {
 };
 
 
-#endif //DOCKING_AVG_H_
