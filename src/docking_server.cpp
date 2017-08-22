@@ -32,8 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <turtlebot_visual_docking/DockingAction.h>
 #include <turtlebot_visual_docking/GoHomeAction.h>
 #include <turtlebot_visual_docking/Docking.h>
-#include <thread>
-#include <future>
 
 class DockingServer {
 
@@ -57,24 +55,7 @@ protected:
  double _HOME_POSE_X;
  double _HOME_POSE_Y;
  double _HOME_POSE_A;
- std::future<bool> _future_result;
- std::future<void> _future_detection;
 private:
-
-   void startApriltagDetectionNode(){
-
-	// At first we have to start the TagDetection Node for the Apriltag detection
-        // we have to run this in an extrqa thread
-
-        //std::string tagid_str = std::to_string(_tag_id);
-        //std::string cmd = "roslaunch docking start_tagdetection.launch tag_param:='[{id: "+tagid_str+",size: 0.120}]'";
-        //system(cmd.c_str());
-        ros::Duration(2.0).sleep();
-
-
-   }  
-
-
 
    bool runDocking(){
 	ROS_INFO("runing Docking ..."); 
@@ -96,26 +77,9 @@ private:
 	ROS_INFO("PreDockingPose: ( % f , %f )",X_map,Y_map);
 
 
-	d->move_to(X_map,Y_map);
+	d->move_to(X_map,Y_map,_HOME_POSE_A);
         return d->startDocking();
    }
-
-
-
-  void runDockingThread(){
-
-	//_future_detection = std::async(std::launch::async,&DockingServer::startApriltagDetectionNode,this);
-	//ros::Duration(3.0).sleep();
-	
-	_future_result = std::async(std::launch::async,&DockingServer::runDocking,this);
-
-   }
-
-
-   void runGoHomeThread(){
-        _future_result = std::async(std::launch::async,&DockingServer::runGoHome,this);
-   }
-
 
 public: 
 
@@ -125,6 +89,9 @@ DockingServer(std::string name) :
     _action_name(name),
     _as_gohome(_nh,"GoHomeActionServer",boost::bind(&DockingServer::executeGoHome, this, _1),false)
   {
+
+    _as_tagid.registerPreemptCallback(boost::bind(&DockingServer::cancel_docking, this));
+    _as_gohome.registerPreemptCallback(boost::bind(&DockingServer::cancel_gohome, this));	
     _as_tagid.start();
     _as_gohome.start();	  
 }
@@ -135,25 +102,14 @@ DockingServer(std::string name) :
   }
 
 
+void cancel_docking(){
+	ROS_INFO("Cancel");
+        _as_tagid.setPreempted();
+}
 
-bool cancelLoop(){
-// After running the docking algorithm we wait until the algorithm has 
-// finished or an cancel massage has been send.  
-std::future_status status;
-do{
-        status = _future_result.wait_for(std::chrono::seconds(2));
-     if (_as_tagid.isPreemptRequested() || !ros::ok()){
-                ROS_INFO("Cancel...");
-                // set the action state to preempted
-                _as_tagid.setPreempted();
-                // Now we have to kill the DockingThread
-                exit(0);
-    }
-}while(status != std::future_status::ready);
-
-bool success = _future_result.get();
-
-return success;
+void cancel_gohome(){
+	ROS_INFO("Cancel");
+	_as_gohome.setPreempted();
 }
 
 /**
@@ -190,14 +146,8 @@ _HOME_POSE_X = 2.97;
 _HOME_POSE_Y = -0.46;
 _HOME_POSE_A = -1.56;
 _tag_id      = 99;
-
-
 	ROS_INFO(" HOME POSE: (%f , %f)",_HOME_POSE_X,_HOME_POSE_Y);
-
-	runGoHomeThread();
-
-	bool success = cancelLoop();
-
+	bool success = runGoHome();
 	if(success){
         	ROS_INFO("reached");
         	_result.result = "Successfully";
@@ -214,14 +164,7 @@ void executeCB(const turtlebot_visual_docking::DockingGoalConstPtr &goal){
 // Read the tagid and compare it to the default tagid defined in /etc/environment 
 _tag_id  = goal->tagid;
 
-// We start the docking algorithm in a different thread,
-// because we want to be able to listen to an cancel message
-// while the docking algortithm is running.
-// TODO: Docking algorithm sould produce feedback-messages
-runDockingThread();
-
-
-bool success = cancelLoop();
+bool success = runDocking();
 
 if(success){
 	ROS_INFO("reached");

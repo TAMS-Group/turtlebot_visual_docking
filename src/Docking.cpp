@@ -41,73 +41,17 @@ float Docking::getAmount(float in){
 
 
 
-Docking::Vector2 Docking::normalize(Vector2 vec){
-
-Docking::Vector2 result;
-float len = sqrt(vec.x*vec.x+vec.y*vec.y);
-if(len == 0.0){
-        ROS_ERROR("normalize(): This vector does have a length of zero");
-        exit(0);
-}else{
- result.x  =  (1/len) * vec.x;
- result.y  =  (1/len) * vec.y;
- return result;
-}
-}
-
 
 /**
- * Diese Funktion gibt einen Vector zurück, der um angle Grad 
- * gedreht wurde.
+ * This function calculates the angle epsilon.
+ * Because the robot does not determine the position angle during the drive any more.
+ * We caqn use an simple constant.
  */
-Docking::Vector2 Docking::spinVector(Docking::Vector2 vec,float angle){
-
-float x 	= vec.x;
-float y 	= vec.y;
-float alpha 	= atan(x/y);
-
-float s 	= alpha + angle;
-float R 	= sqrt(x*x+y*y);	 
-
-float y_new 	= R * sqrt(tan(s)*tan(s) + 1);
-float x_new     = y_new * tan(s)*tan(s);
-
-Docking::Vector2 v_new;
-v_new.x 	= x_new;
-v_new.y 	= y_new;  
-
-return v_new;
-}
-
-
-
-/**
- * This function calculates the angle epsilon described in 
- * equation 11.
- */
-float Docking::epsi(float _tx){
+float Docking::epsi(){
 
 return (M_PI/180)*40;
 
-/*
-float tx    = 100*_tx;
-float tb    = 23.0; //Tagbreite in cm
-
-float p     = 0.30;
-float theta = 50 * (M_PI/180);
-float a     = tan(M_PI/2);
-float b     = tan(theta/2);  
-
-float A     = (tb*(-1)*p)/(2*(p-1)*tx);
-float P     = (b+a+A*a-b*A)/(1+a*b*A);
-float Q     = (-1*(a*b+A))/(1+a*b*A);
-
-float tane  = (-P/2) + sqrt((P/2)*(P/2) - Q);
-
-return atan(tane);
-*/
 }
-
 /**
  * This function calculates the docking angle 
  * described in equation 4.
@@ -192,12 +136,6 @@ void Docking::get_optical_frame(){
     }
 }
 
-void Docking::Show_Quad(tf::Quaternion q){
-        tf::Vector3 v           = q.getAxis();
-        ROS_INFO("Q[%f , %f ,%f , %f]",v.getX(),v.getY(),v.getZ(),q.getW());
-
-}
-
 /**
  * This function gets the angle alpga_yaw by using the lookupTransform
  * function.
@@ -207,7 +145,7 @@ float Docking::get_yaw_angle(){
     tf::StampedTransform yaw;
     try{
         ros::Time begin = ros::Time::now();
-        listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(10.0));
+        listener->waitForTransform("base_link",_tag_name,begin,ros::Duration(3.0));
         listener->lookupTransform("base_link", _tag_name,begin, yaw);
     }catch (tf::TransformException ex){
         ROS_ERROR("get_yaw_angle %s",ex.what());
@@ -281,12 +219,10 @@ void Docking::startFrontalDocking(){
 void Docking::RegisterCallbackFunctions(){
 	_sub1 = _n->subscribe("mobile_base/sensors/imu_data",1,&Docking::actual_angle,this);
         _sub2 = _n->subscribe("docking_tags",1,&Docking::get_avg_position_angle,this);
-        //_sub3 = _n.subscribe("diagnostics",10,&Docking::get_battery_status,this);
-        _sub4 = _n->subscribe("docking_tags",10,&Docking::findTag,this);
-        _sub5 = _n->subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
-        _sub6 = _n->subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
-        _sub7 = _n->subscribe("/mobile_base/sensors/core",1,&Docking::get_ticks,this);
-        _sub8 = _n->subscribe("/odom",1,&Docking::get_odom_pos,this);
+        _sub3 = _n->subscribe("docking_tags",10,&Docking::findTag,this);
+        _sub4 = _n->subscribe("mobile_base/sensors/core",1,&Docking::get_charging_status,this);
+        _sub5 = _n->subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
+        _sub6 = _n->subscribe("/odom",1,&Docking::get_odom_pos,this);
 }
 /**
 * This constructor is for the use in a node, which uses the launch file: start_docking.launch
@@ -371,13 +307,6 @@ void Docking::get_odom_pos(const nav_msgs::Odometry& msg){
            
 }
 
-
-
-void Docking::get_ticks(const kobuki_msgs::SensorState& msg){
-
-	_ticks_right = msg.right_encoder;
-	_ticks_left  = msg.left_encoder;	
-}
 
 
 void Docking::get_bumper_status(const kobuki_msgs::BumperEvent& msg){
@@ -486,7 +415,6 @@ if(_start_avg){
             }else{
                 float alpha_dock   = atan(yy/xx);
                 float alpha_pos    = (alpha_dock - (M_PI/2 + yaw));
-		_g_mutex.lock();
                     if(std::isfinite(alpha_pos)){
                         _avg_pos->new_value(alpha_pos);
                         _avg_dock->new_value(alpha_dock);
@@ -505,7 +433,6 @@ if(_start_avg){
 			_avg_yaw_angle		= avg_yaw_angle;
  
                     }
-		_g_mutex.unlock();
             }
 	}
 	}
@@ -636,7 +563,7 @@ void Docking::drive_backward(float distance){
  * 
  */ 
 
-void Docking::move_to(float x, float y){
+void Docking::move_to(float x, float y, float A){
 
 	    //MoveBaseClient ac("move_base", true);
 	    
@@ -653,7 +580,7 @@ void Docking::move_to(float x, float y){
 	    goal.target_pose.pose.position.x = x;
 	    goal.target_pose.pose.position.y = y;
 
-	    goal.target_pose.pose.orientation.w = 1.0 ;
+	    goal.target_pose.pose.orientation.w = A ;
 
 	    //ROS_INFO("Sending goal");
 	    _ac->sendGoal(goal);
@@ -720,7 +647,7 @@ void Docking::watchTag(){
  */
 void Docking::linearApproach(){
     adjusting();
-    //ROS_INFO("Begin linear approach");
+    //ROS_INFO_STREAM("Begin linear approach");
     Docking::Vector2 pos;
 
     startReadingAngle();
@@ -730,7 +657,7 @@ void Docking::linearApproach(){
     stopReadingAngle();
 
     float alpha_deg     = (180/M_PI)*alpha;
-    float epsilon_rad   = epsi(pos.x);
+    float epsilon_rad   = epsi();
     float epsilon_deg   = (180/M_PI)*epsilon_rad;
     float e 		= getAmount(epsilon_rad);
 
@@ -783,7 +710,7 @@ void Docking::stopReadingAngle(){
  * This function does the positioning described in section 6.1
  */
 void Docking::positioning(){
-	//ROS_INFO("Staring positioning...");
+	//ROS_INFO_STREAM("Staring positioning...");
 	startReadingAngle();
 		float a_pos_rad             = _avg_position_angle;
 		float a_pos_deg		    = (180/M_PI)*_avg_position_angle;
@@ -796,13 +723,13 @@ void Docking::positioning(){
 	//ROS_ERROR("Pos_X read with : %f",_avg_position_X);
 	//ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
 
-	if( getAmount(a_pos_deg)  < 6.0){
+	if( getAmount(a_pos_deg)  < 8.0){
 	    //ROS_INFO("Start frontal docking without positioning...");
 	    //ROS_INFO("Angle = %f",_avg_position_angle);
             startReadingAngle();
 	    docking(); 
         }else{
-            float alpha_yaw 	= get_yaw_angle();
+            float alpha_yaw 	= _avg_yaw_angle;//get_yaw_angle();
             float beta_rad      = 0.0;
             float way           = 0.0;
             if(a_pos_deg < 0.0){// Now the robot has to turn right
@@ -852,7 +779,7 @@ void Docking::positioning(){
 		    // far enough away from the docking station
 		   startReadingAngle();
 		   float X       = getAmount(_avg_position_X);
-		   float epsilon = epsi(X); 
+		   float epsilon = epsi(); 
 		   float phi     = (M_PI/2) - epsilon;
 		   float D       = tan(phi) * getAmount(_avg_position_Y);
  		   stopReadingAngle();
@@ -877,7 +804,7 @@ void Docking::positioning(){
                 }
 		
             }else{
-                ROS_ERROR("RESTART_POSITIONING");
+                //ROS_INFO_STREAM("RESTART_POSITIONING");
                 positioning();
             }
         }
@@ -888,7 +815,7 @@ void Docking::positioning(){
  * described in section 6.3
  */
 void Docking::docking(){
-//    ROS_INFO("Startring frontal docking...");
+    //ROS_INFO("Startring frontal docking...");
     geometry_msgs::Twist      base;
     float DELTA             = 2.0;
     _try_more               = false;
@@ -913,7 +840,7 @@ void Docking::docking(){
         }else{
             base.angular.z = 0;
         if(pos.x > 0.60 ){
-		base.linear.x = 0.15;// We should drive very slow
+		base.linear.x = 0.10;// We should drive very slow
 	}else{
 		base.linear.x = 0.02;// If we are near enough we drive even slower
 	}
@@ -934,7 +861,7 @@ void Docking::docking(){
             ros::Duration(0.5).sleep();
             docking();
          }else{
-            //ROS_INFO("Try once more...\n");
+            //ROS_INFO("Try once more...");
             this->drive_backward(0.55);
             this->adjusting();
             _bumper_pressed = false;
@@ -949,7 +876,6 @@ void Docking::docking(){
  * This function starts the docking.
  */
 bool Docking::startDocking(){
-	//move_to(_TURTLEBOT_PRE_DOCKING_POSE_X,_TURTLEBOT_PRE_DOCKING_POSE_Y);
 	ros::Duration(1.0).sleep();
 	searchTag();
 	watchTag();

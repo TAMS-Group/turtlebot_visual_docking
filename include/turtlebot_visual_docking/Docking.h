@@ -4,7 +4,6 @@ All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
@@ -26,9 +25,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 
-#ifndef DOCKING_DOCKING_H_
-#define DOCKING_DOCKING_H_
-
 #pragma once 
 
 #include <ros/ros.h>
@@ -37,7 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "geometry_msgs/PoseArray.h"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "apriltags_ros/AprilTagDetectionArray.h"
-#include <std_msgs/Float64.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include <geometry_msgs/Twist.h>
@@ -53,7 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <nav_msgs/Odometry.h>
 #include <tf/LinearMath/Vector3.h>
 #include <turtlebot_visual_docking/Avg.h>
-#include <mutex>
 #include <turtlebot_visual_docking/DockingAction.h>
 
 class Docking
@@ -75,18 +69,11 @@ private:
 	ros::Subscriber         _sub4;
 	ros::Subscriber         _sub5;
 	ros::Subscriber         _sub6;
-	ros::Subscriber         _sub7;
-	ros::Subscriber         _sub8;
 	double                  _angle;
 	ros::NodeHandle         *_n;
 	tf::StampedTransform    _transform_cam_base;
 	tf::StampedTransform    _transform_optical_cam;
-	int                     _ticks_right;
-	int                     _ticks_left;
 	bool                    _find_tag;
-	float                   _start_pos_x;
-	float                   _start_pos_y;
-	float                   _start_pos_z;
 	bool                    _docking_status;// Is true when robot is loading energy
 	bool                    _try_more;
 	bool                    _start_avg;
@@ -96,7 +83,6 @@ private:
 	Avg                     *_avg_X;
 	Avg                     *_avg_Y;
 	Avg			*_avg_yaw;
-	std::mutex              _g_mutex;
 	float                   _avg_position_X;
 	float                   _avg_position_Y;
 	float                   _avg_position_angle;
@@ -110,14 +96,11 @@ private:
  	float 			_TURTLEBOT_PRE_DOCKING_POSE_X;
 	float 			_TURTLEBOT_PRE_DOCKING_POSE_Y;	
         float getAmount(float in);
-	Vector2 normalize(Vector2 vec);
-	Vector2 spinVector(Vector2 vec,float angle);
-	float epsi(float _tx);
+	float epsi();
 	float docking_angle();
 	float get_direction_angle();
 	void get_cameraLink_baseLink();
 	void get_optical_frame();
-	void Show_Quad(tf::Quaternion q);
 	float get_yaw_angle();
 	Vector2 get_position();
 	void Init();
@@ -128,7 +111,6 @@ public:
 	Docking();
 	Docking(ros::NodeHandle* nodeHandle,int tag_id);
 	void get_odom_pos(const nav_msgs::Odometry& msg);
-	void get_ticks(const kobuki_msgs::SensorState& msg);
 	void get_bumper_status(const kobuki_msgs::BumperEvent& msg);
 	void actual_angle(const sensor_msgs::Imu& msg);
 	void get_battery_status(const diagnostic_msgs::DiagnosticArray& msg);
@@ -138,7 +120,7 @@ public:
 	void move_angle(float alpha_rad);
 	void drive_forward(float distance);
 	void drive_backward(float distance);
-	void move_to(float x, float y);
+	void move_to(float x, float y,float A);
 	void watchTag();
 	void searchTag();
 	void adjusting();
@@ -151,4 +133,3 @@ public:
 
 };
 
-#endif //DOCKING_DOCKING_H_
