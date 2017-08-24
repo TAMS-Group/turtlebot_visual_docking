@@ -48,8 +48,22 @@ class Avg {
 
 	public:
 	Avg(int _MESS);
+	
+	/**
+ 	* This function adds an value to an array.
+ 	* When the array is full, the first element is deleted, then all 
+ 	* elements are shifted one index to the left and the new element is 
+ 	* added at the end.
+ 	*/
 	void new_value(float value);
+	
+	/**
+ 	 * This function computes the mean of the value array.
+ 	 */	
 	float avg();
+	/**
+	 * This function delets all values out of the array.
+	 */ 
 	void flush_array();
 
 

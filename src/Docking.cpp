@@ -703,10 +703,6 @@ void Docking::positioning(){
         }
 }
 
-/**
- * This function does the frontal docking, which is 
- * described in section 6.3
- */
 void Docking::docking(){
     //ROS_INFO("Startring frontal docking...");
     geometry_msgs::Twist      base;
@@ -766,9 +762,6 @@ void Docking::docking(){
 }
 
 
-/**
- * This function starts the docking.
- */
 bool Docking::startDocking(){
 	ros::Duration(1.0).sleep();
 	searchTag();

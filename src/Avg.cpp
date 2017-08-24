@@ -43,12 +43,6 @@ for(int z = 0; z < MESS; z++){
 
 
 
-/**
- * This function adds an value to an array.
- * When the array is full, the first element is deleted, then all 
- * elements are shifted one index to the left and the new element is 
- * added at the end.
- */
 void Avg::new_value(float value){
 	
 	if(avg_counter < MESS){
@@ -78,9 +72,6 @@ void Avg::new_value(float value){
 	
 }
 
-/**
- * This function computes the mean of the value array.
- */
 float Avg::avg(){
 	if(avg_counter != -1){
 		return avg_sum/(avg_counter + 1);
