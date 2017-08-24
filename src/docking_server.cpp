@@ -25,7 +25,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#pragma once
+//#pragma once
 
 #include "std_msgs/String.h"
 #include <iostream>
@@ -70,10 +70,10 @@ private:
         ROS_INFO("running GoHome ... ");
         Docking *d = new Docking(&_nh,_tag_id);
 	// First we need to calculate the PRE_DOCKING_POSE
-
-	float X = _HOME_POSE_X - 0.60;
-	float Y = _HOME_POSE_Y;
-	float phi = _HOME_POSE_A;
+	// The robot should stand 60cm in front of the docking station
+	float X     = _HOME_POSE_X - 0.60;
+	float Y     = _HOME_POSE_Y;
+	float phi   = _HOME_POSE_A;
 	float Y_map = X*cos(phi) + Y*sin(phi);
 	float X_map = -X*sin(phi) + Y*cos(phi);
 	
@@ -88,7 +88,7 @@ public:
 
 // Constructor 
 DockingServer(std::string name) :
-    _as_tagid(_nh, name, boost::bind(&DockingServer::executeCB, this, _1), false),
+    _as_tagid(_nh, name, boost::bind(&DockingServer::executeDocking, this, _1), false),
     _action_name(name),
     _as_gohome(_nh,"GoHomeActionServer",boost::bind(&DockingServer::executeGoHome, this, _1),false)
   {
@@ -156,7 +156,7 @@ if (_nh.getParam("/dock_server/TAG_ID", ID)){
 
 
 
-void executeCB(const turtlebot_visual_docking::DockingGoalConstPtr &goal){
+void executeDocking(const turtlebot_visual_docking::DockingGoalConstPtr &goal){
 
 // Read the tagid and compare it to the default tagid defined in /etc/environment 
 _tag_id  = goal->tagid;

@@ -194,7 +194,7 @@ void Docking::Init(){
     _start_avg		= false;
     _bumper_pressed     = false;
     _avg_pos 		= new Avg(10);
-    _avg_dock		= new Avg(3);
+    _avg_dock		= new Avg(2);
     _avg_X 		= new Avg(10);
     _avg_Y		= new Avg(10);
     _avg_yaw		= new Avg(10);
@@ -818,7 +818,7 @@ void Docking::positioning(){
 void Docking::docking(){
     //ROS_INFO("Startring frontal docking...");
     geometry_msgs::Twist      base;
-    float DELTA             = 2.0;
+    float DELTA             = 1.0;
     _try_more               = false;
 	Docking::Vector2 pos;
 	pos.x 		= _avg_position_X;
