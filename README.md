@@ -15,6 +15,14 @@ To start the ActionServer you can use:
 
 ``` roslaunch turtlebot_visual_docking docking_server.launch ```
 
+To start docking without driving to the HOME_POSE use:
+``` rostopic pub /DockingActionServer/goal ... ```
+
+
+To start docking with driving to the HOME_POSE use:
+``` rostopic pub /GoHomeActionServer/goal ... ```
+
+
 __Usage docking__
 
 To start the docking algorithm you can use:
