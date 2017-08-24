@@ -6,7 +6,7 @@ E.g.:
 export TURTLEBOT_HOME_POSE_X="2.97"  
 export TURTLEBOT_HOME_POSE_Y="-0.46"  
 export TURTLEBOT_HOME_POSE_A="-1.56"   
-export RPC_DOCK_ID="99"  
+export DOCK_ID="99"  
 
 
 __Usage bringup__
