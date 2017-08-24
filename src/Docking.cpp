@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <turtlebot_visual_docking/Docking.h>
 
 
-float Docking::getAmount(float in){
+float Docking::getAbs(float in){
 
 	if(in < 0 ){
 		return (-1)*in;
@@ -336,7 +336,7 @@ if(_start_avg){
             float zz	= base_tag.getOrigin().z();
             float yaw   = tf::getYaw(base_tag.getRotation());
 	    //float yawyaw= tf::getYaw(p.orientation);
-            if( getAmount(xx) <  0.00001){
+            if( getAbs(xx) <  0.00001){
                 ROS_ERROR("Division through zero is not allowed! xx=%f, yy= %f",xx,yy);
                 //exit(0);
 		return;
@@ -395,10 +395,10 @@ void Docking::move_angle(float alpha_rad){
 if(alpha_rad != 0.0){
     
     float turn_velocity = 0.5;
-    float DT            = getAmount(0.1/turn_velocity);
+    float DT            = getAbs(0.1/turn_velocity);
     float goal_angle    = _angle + alpha_rad;
-    int   N             = (int)getAmount((goal_angle / M_PI));
-    float rest          = getAmount(goal_angle) - ((float)N * M_PI);
+    int   N             = (int)getAbs((goal_angle / M_PI));
+    float rest          = getAbs(goal_angle) - ((float)N * M_PI);
     
     if((rest > 0) && (N > 0)){
         //This is nessesary because the imu is between -180 - 180
@@ -425,7 +425,7 @@ if(alpha_rad != 0.0){
         //If we would not the application crashes after some time.
 	ros::Duration(DT).sleep();
         float epsilon 	= goal_angle - _angle;
-        epsilon 	= getAmount(epsilon);  
+        epsilon 	= getAbs(epsilon);  
         weiter = epsilon  > 0.1 ;
     }
 }
@@ -438,7 +438,7 @@ void Docking::drive_forward(float distance){
 distance	    = distance - 0.055;
 
 float velocity      = 0.15;
-float direction     = distance / getAmount(distance); 
+float direction     = distance / getAbs(distance); 
 // We actually save the start Transformation
 tf::Transform *startTransform = _Odometry_Transform;
 tf::Vector3 startPos 	      = startTransform->getOrigin();
@@ -526,7 +526,7 @@ void Docking::adjusting(){
 void Docking::watchTag(){
    startReadingAngle();
    float epsilon = 3.0 ;
-   while(getAmount((180/M_PI)*_avg_docking_angle) > epsilon){
+   while(getAbs((180/M_PI)*_avg_docking_angle) > epsilon){
         geometry_msgs::Twist base;
         base.linear.x   = 0.0;
         base.angular.z  = 0.2;//5.0 * (M_PI/180);
@@ -554,7 +554,7 @@ void Docking::linearApproach(){
     float alpha_deg     = (180/M_PI)*alpha;
     float epsilon_rad   = epsi();
     float epsilon_deg   = (180/M_PI)*epsilon_rad;
-    float e 		= getAmount(epsilon_rad);
+    float e 		= getAbs(epsilon_rad);
 
     float beta 		= (M_PI/2) - epsilon_rad;
     float d 		= 100*pos.y; //in cm
@@ -615,9 +615,9 @@ void Docking::positioning(){
 	//ROS_ERROR("Pos_X read with : %f",_avg_position_X);
 	//ROS_ERROR("Pos_Y read with : %f",_avg_position_Y);
 
-	float way = getAmount(sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y)); 
+	float way = getAbs(sin(a_pos_rad) * sqrt(pos.x*pos.x+pos.y*pos.y)); 
 
-	if( (getAmount(a_pos_deg)  < 10.0) || (way < 0.08)){
+	if( (getAbs(a_pos_deg)  < 10.0) || (way < 0.08)){
 	    //ROS_INFO("Start frontal docking without positioning...");
 	    //ROS_INFO("Angle = %f",_avg_position_angle);
             startReadingAngle();
@@ -641,7 +641,7 @@ void Docking::positioning(){
             //ROS_INFO("Weglaenge = %f",way);
             //ROS_INFO("Fahre los!");
             // Drive in the frontal Position 
-            drive_forward(getAmount(way));
+            drive_forward(getAbs(way));
             // Now the robot should be in the frontal Position 
             // he must turn now 
             if(a_pos_deg > 0.0){
@@ -655,10 +655,10 @@ void Docking::positioning(){
             ros::Duration(1.0).sleep();
             
             startReadingAngle();
-            float a_pos_rad = getAmount(_avg_position_angle);
+            float a_pos_rad = getAbs(_avg_position_angle);
             stopReadingAngle();
             
-            a_pos_deg = getAmount((180/M_PI) * a_pos_rad);
+            a_pos_deg = getAbs((180/M_PI) * a_pos_rad);
             //ROS_ERROR("A_POS_DEG = %f",a_pos_deg); 
             if(a_pos_deg < 20.0){
                if(a_pos_deg < 10.0){
@@ -671,10 +671,10 @@ void Docking::positioning(){
 		    // We should only allow the linear approach if the robot is 
 		    // far enough away from the docking station
 		   startReadingAngle();
-		   float X       = getAmount(_avg_position_X);
+		   float X       = getAbs(_avg_position_X);
 		   float epsilon = epsi(); 
 		   float phi     = (M_PI/2) - epsilon;
-		   float D       = tan(phi) * getAmount(_avg_position_Y);
+		   float D       = tan(phi) * getAbs(_avg_position_Y);
  		   stopReadingAngle();
 		
 	           //ROS_INFO("D = %f",D);

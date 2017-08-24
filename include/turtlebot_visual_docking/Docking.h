@@ -99,7 +99,7 @@ private:
 	/**
 	 * This function returns the absolute value of the parameter in.
  	*/
-        float getAmount(float in);
+        float getAbs(float in);
 	
 	/**
  	 * This function calculates the angle epsilon.
