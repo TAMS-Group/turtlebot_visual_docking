@@ -27,9 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <turtlebot_visual_docking/Docking.h>
 
 
-/**
- * This function returns the amount of in.
- */
 float Docking::getAmount(float in){
 
 	if(in < 0 ){
@@ -41,12 +38,6 @@ float Docking::getAmount(float in){
 
 
 
-
-/**
- * This function calculates the angle epsilon.
- * Because the robot does not determine the position angle during the drive any more.
- * We caqn use an simple constant.
- */
 float Docking::epsi(){
 
 return (M_PI/180)*40;
@@ -72,12 +63,6 @@ float Docking::docking_angle(){
 
 }
 
-/**
- * This function gives the angle in rad between the x-axis and the transform. 
- * The orign of the coordinate-system is the April-Tag. Thus the apriltag must be
- * visible when this function is used. 
- */
-
 float Docking::get_direction_angle(){
 
 	tf::StampedTransform transform;
@@ -101,11 +86,6 @@ float Docking::get_direction_angle(){
 }
 
 
-/**
- * This function gets the transform between the 
- * camera and the base_link.
- * The result is stored in _trcamera_rgb_optical_frameansform_cam_base
- */
 void Docking::get_cameraLink_baseLink(){
     try{
         ros::Time begin = ros::Time::now();
@@ -120,11 +100,6 @@ void Docking::get_cameraLink_baseLink(){
 }
 
 
-/**
- * This function gets the transform betwwen the 
- * camera_rgb_optical_frame and the camera_link.
- * The result is stored in _transform_optical_cam
- */
 void Docking::get_optical_frame(){
     try{
         ros::Time begin = ros::Time::now();
@@ -136,10 +111,6 @@ void Docking::get_optical_frame(){
     }
 }
 
-/**
- * This function gets the angle alpga_yaw by using the lookupTransform
- * function.
- */
 float Docking::get_yaw_angle(){
 
     tf::StampedTransform yaw;
@@ -155,10 +126,6 @@ float Docking::get_yaw_angle(){
     return  -(M_PI/2 + tf::getYaw(yaw.getRotation()));
 }
 
-/**
- * This function gets the position by using the lookupTransform function.
- * It returns a two dimensional Vector (Vector2).
- */
 Docking::Vector2 Docking::get_position(){
 
     tf::StampedTransform transform;
@@ -176,12 +143,6 @@ Docking::Vector2 Docking::get_position(){
     pos.y = transform.getOrigin().z();
     return pos;
 }
-
-
-
-
-
-
 
 void Docking::Init(){
     get_cameraLink_baseLink();
@@ -202,10 +163,6 @@ void Docking::Init(){
     _odom_pos.y		= 0.0;
 }
 
-/**
- * This function starts the frontal docking.
- * Before it does that the avarage arrays are flushed.
- */
 void Docking::startFrontalDocking(){
     _start_avg=false;
     _avg_pos->flush_array();
@@ -224,9 +181,7 @@ void Docking::RegisterCallbackFunctions(){
         _sub5 = _n->subscribe("mobile_base/events/bumper",1,&Docking::get_bumper_status,this);
         _sub6 = _n->subscribe("/odom",1,&Docking::get_odom_pos,this);
 }
-/**
-* This constructor is for the use in a node, which uses the launch file: start_docking.launch
-*/
+
 Docking::Docking(){
 
         _n = new ros::NodeHandle();
@@ -284,13 +239,7 @@ Docking::Docking(ros::NodeHandle* nodeHandle,int tag_id){
         Init();
 }
 
-
-
-/**
-* This callback function reads the Odometry and saves it into the _odom_pos Vector
-*/
 void Docking::get_odom_pos(const nav_msgs::Odometry& msg){
-
 	
 //	ROS_ERROR("X = %f",msg.pose.pose.position.x);
 	_odom_pos.x = msg.pose.pose.position.x;
@@ -308,7 +257,6 @@ void Docking::get_odom_pos(const nav_msgs::Odometry& msg){
 }
 
 
-
 void Docking::get_bumper_status(const kobuki_msgs::BumperEvent& msg){
 
 int status_all = msg.state;
@@ -320,21 +268,10 @@ if(status_all==1){
 }
 
 
-/**
- * This callback function read the rotation angle, 
- * from the IMU. The value is stored in the Varibale 
- * _angle.
- */
 void Docking::actual_angle(const sensor_msgs::Imu& msg){
         _angle = tf::getYaw(msg.orientation);
 }
 
-/**
- * This callback function detects if the robot is in the docking 
- * station and is recharging. The rusult is stored in the variable 
- * _docking_status which is true if the robot is recharging and 
- * false otherwise.  
- */
 void Docking::get_battery_status(const diagnostic_msgs::DiagnosticArray& msg){
     int s = msg.status.size();
     if(s >= 1){
@@ -353,11 +290,6 @@ void Docking::get_battery_status(const diagnostic_msgs::DiagnosticArray& msg){
 	}
 }
 
-/**
- * This callback function detects if the robot is in the docking
- * station and does recharging.
- */
-
 void Docking::get_charging_status(const kobuki_msgs::SensorState& msg){
 
 int status = msg.charger;
@@ -371,10 +303,6 @@ if(status == 6 ){
 
 }
 
-/*
- * Diese callback funktion liest 10 mal die Pose aus und mittelt den Winkel um 
- * Störanfälliges rauschen zu verhindern.
- */
 void Docking::get_avg_position_angle(const apriltags_ros::AprilTagDetectionArray& msg){
 if(_start_avg){
 	apriltags_ros::AprilTagDetection detection;
@@ -439,11 +367,6 @@ if(_start_avg){
 }
 }
 
-/**
- * This callback function sets the variable _TAG_AVAILABLE to true, 
- * when the Apriltag can be seen. Else _TAG_AVAILABLE
- * will be set to false.
- */
 void Docking::findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 	if(_find_tag){
 		apriltags_ros::AprilTagDetection detection;
@@ -467,9 +390,6 @@ void Docking::findTag(const apriltags_ros::AprilTagDetectionArray& msg){
 	}
 }
 
-/**
- * This function moves the robot exact about alpha_rad
- */
 void Docking::move_angle(float alpha_rad){
 
 if(alpha_rad != 0.0){
@@ -548,20 +468,10 @@ _publisher.publish(zero);
 
 }
 
-/**
- * This function drives an exact distance backwards.
- * The parameter distance is given in meter.
- */
 void Docking::drive_backward(float distance){
     drive_forward(-distance);
 }
 
-
-/**
- * This function dirves to the given coordinates.
- * This function only works if the robot does know its position.
- * 
- */ 
 
 void Docking::move_to(float x, float y, float A){
 
@@ -590,11 +500,6 @@ void Docking::move_to(float x, float y, float A){
 
 }
 
-
-/**
- * This function turns the robot counter clock-wise until the 
- * Apriltag can be seen by the camera.
- */
 void Docking::searchTag(){
     //ROS_INFO("searching Tag ...");
     _find_tag = true;// switch on the callback function findTag
@@ -609,10 +514,6 @@ void Docking::searchTag(){
   _find_tag = false; // switch off the callback function findTag
 }
 
-/**
- * This function turns the robot in order to have an 
- * resulting yaw angle of zero deg.
- */
 void Docking::adjusting(){
 	//ROS_INFO("Adjusting position ...");
 	startReadingAngle();
@@ -622,9 +523,6 @@ void Docking::adjusting(){
 	move_angle(yaw);
 }
 
-/**
-* The robot turns until the docking asngle is smaller than epsilon.
-*/
 void Docking::watchTag(){
    startReadingAngle();
    float epsilon = 3.0 ;
@@ -642,9 +540,6 @@ void Docking::watchTag(){
 
 
 
-/**
- * This function does the linear Approach described in section 6.2
- */
 void Docking::linearApproach(){
     adjusting();
     //ROS_INFO_STREAM("Begin linear approach");
@@ -706,9 +601,6 @@ void Docking::stopReadingAngle(){
 }
 
 
-/**
- * This function does the positioning described in section 6.1
- */
 void Docking::positioning(){
 	//ROS_INFO_STREAM("Staring positioning...");
 	startReadingAngle();

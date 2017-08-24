@@ -95,40 +95,206 @@ private:
 	tf::Transform           *_Odometry_Transform;
  	float 			_TURTLEBOT_PRE_DOCKING_POSE_X;
 	float 			_TURTLEBOT_PRE_DOCKING_POSE_Y;	
+        
+	/**
+	 * This function returns the absolute value of the parameter in.
+ 	*/
         float getAmount(float in);
+	
+	/**
+ 	 * This function calculates the angle epsilon.
+ 	 * Because the robot does not determine the position angle during the drive any more.
+         * We can use an simple constant.
+         */
 	float epsi();
+	
+	/**
+ 	* This function calculates the docking angle 
+ 	* described in equation 4.
+ 	*/
 	float docking_angle();
+	
+	/**
+ 	 * This function gives the angle in rad between the x-axis and the transform. 
+ 	 * The orign of the coordinate-system is the April-Tag. Thus the apriltag must be
+ 	 * visible when this function is used. 
+ 	 */
 	float get_direction_angle();
+
+	/**
+	 * This function gets the transform between the 
+ 	 * camera and the base_link.
+ 	 * The result is stored in _trcamera_rgb_optical_frameansform_cam_base
+	 */
 	void get_cameraLink_baseLink();
+	
+	/**
+	 * This function gets the transform betwwen the 
+ 	 * camera_rgb_optical_frame and the camera_link.
+ 	 * The result is stored in _transform_optical_cam
+	 */
 	void get_optical_frame();
+	
+	/**
+	 * This function gets the angle alpha_yaw by using the lookupTransform
+ 	 * function.
+ 	 */
 	float get_yaw_angle();
-	Vector2 get_position();
+
+	/**
+ 	 * This function gets the position by using the lookupTransform function.
+ 	 * It returns a two dimensional Vector (Vector2).
+ 	 */	
+ 	Vector2 get_position();
+	
+	/**
+	* This function sets some initial values for the class variables.	
+	*/
 	void Init();
+	
+	/**
+	* This function registers all the CallbackFunctions used.
+	*/
 	void RegisterCallbackFunctions();
 public:
-
+	/**
+	 * This function starts the frontal docking.
+ 	 * Before it does that the avarage arrays are flushed.
+	 */
 	void startFrontalDocking();
+
+	/**
+	* This constructor is for the use in a node, which uses the 
+	* launch file: start_docking.launch
+	*/
 	Docking();
+	
+	/**
+	* This constructor us used by the ActionServer
+	*/
 	Docking(ros::NodeHandle* nodeHandle,int tag_id);
+	
+	/**
+	* This callback function reads the Odometry and saves 
+	* it into the _odom_pos Vector
+	*/
 	void get_odom_pos(const nav_msgs::Odometry& msg);
+	
+	/**
+	* This function sets the class variable _bumper_pressed to true
+	* if the bumper has been trigered. Otherwise the variable _ bumper_pressed
+	* should be false.
+	*/
 	void get_bumper_status(const kobuki_msgs::BumperEvent& msg);
+	
+
+	/**
+ 	* This callback function read the rotation angle, 
+ 	* from the IMU. The value is stored in the Varibale 
+ 	* _angle.
+ 	*/
 	void actual_angle(const sensor_msgs::Imu& msg);
+	
+	/**
+ 	 * This callback function detects if the robot is in the docking 
+ 	 * station and is recharging. The rusult is stored in the variable 
+ 	 * _docking_status which is true if the robot is recharging and 
+ 	 * false otherwise.  
+ 	 */
 	void get_battery_status(const diagnostic_msgs::DiagnosticArray& msg);
+
+	/**
+	 * This callback function detects if the robot is in the docking
+ 	 * station and does recharging.
+ 	 */
 	void get_charging_status(const kobuki_msgs::SensorState& msg);
+
+	/**
+ 	 * This callback funtion reads all angles which are used for the 
+	 * docking algorithm. Because we compute an avarage over these angles
+	 * we does not use TF. This function calculates the needed values out of the 
+	 * 'apriltags_ros::AprilTagDetectionArray'.
+	 * This function only starts working if the class variable _start_avg is 
+	 * set to true.
+ 	 */
 	void get_avg_position_angle(const apriltags_ros::AprilTagDetectionArray& msg);
+
+	/**
+ 	* This callback function sets the variable _TAG_AVAILABLE to true, 
+ 	* when the Apriltag can be seen. Else _TAG_AVAILABLE
+ 	* will be set to false.
+	* This function will only start working if the classvariable _find_tag
+	* is set to true.
+	*/	
 	void findTag(const apriltags_ros::AprilTagDetectionArray& msg);
+	
+	/**
+ 	 * This function moves the robot exact about alpha_rad
+ 	 */
 	void move_angle(float alpha_rad);
+	
+	/**
+	 * This function moves the robot the given distance forward
+	 * Distance in m.
+	 */
 	void drive_forward(float distance);
+	/**
+	 * This function moves the robot backwards about the given distance
+	 * Distance in m.
+	 */
 	void drive_backward(float distance);
+	
+	/**
+ 	* This function dirves to the given coordinates.
+ 	* This function only works if the robot does know its position. 
+ 	*/
 	void move_to(float x, float y,float A);
+	
+	/**
+	 * The robot turns until the docking asngle is smaller than epsilon.
+	 */
 	void watchTag();
+	
+	/**
+ 	 * This function turns the robot counter clock-wise until the 
+ 	 * Apriltag can be seen by the camera.
+ 	 */
 	void searchTag();
+	
+	/**
+ 	 * This function turns the robot in order to have an 
+ 	 * resulting yaw angle of zero deg.
+ 	 */
 	void adjusting();
+	
+	/**
+	 * This function does the linear Approach described in section 6.2
+ 	 */
 	void linearApproach();
+	/**
+	 * This function should be called before any '_avg_...' variable is used
+	 */
 	void startReadingAngle();
+	
+	/**
+	 * This function should be called after the reading the '_avg_...' variables
+	 */
 	void stopReadingAngle();
+	
+	/**
+	 * This function does the positioning described in section 6.1
+ 	 */
 	void positioning();	
+
+	/**
+ 	* This function does the frontal docking, which is 
+ 	* described in section 6.3
+ 	*/
 	void docking();
+	
+	/**
+	 * This function starts the docking.
+ 	 */
 	bool startDocking();	
 
 };
