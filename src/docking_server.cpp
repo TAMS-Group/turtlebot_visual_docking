@@ -71,8 +71,9 @@ private:
         Docking *d = new Docking(&_nh,_tag_id);
 	// First we need to calculate the PRE_DOCKING_POSE
 	// The robot should stand 60cm in front of the docking station
+	// and 30cm left of the docking station
 	float X     = _HOME_POSE_X - 0.60;
-	float Y     = _HOME_POSE_Y;
+	float Y     = _HOME_POSE_Y - 0.30;
 	float phi   = _HOME_POSE_A;
 	float Y_map = X*cos(phi) + Y*sin(phi);
 	float X_map = -X*sin(phi) + Y*cos(phi);
