@@ -3,7 +3,6 @@ This repository provides the algorithm which is needed to do the docking with
 the Apriltags as landmark. All required system variables like the HOME_POSE etc. need to be in 
 the file: /etc/environment  on the turtlebots file system. This file should contain the following Variables.
 E.g.:  
-export TURTLEBOT_STACKS="hexagons"  
 export TURTLEBOT_HOME_POSE_X="2.97"  
 export TURTLEBOT_HOME_POSE_Y="-0.46"  
 export TURTLEBOT_HOME_POSE_A="-1.56"   
